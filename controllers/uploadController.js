@@ -10,7 +10,7 @@ function getHash(file) {
   const hash = getBufferHash(buffer);
   return hash;
 }
-
+//
 async function exist(hash) {
   return null;
   // Revisar si ya existe en Firebase
