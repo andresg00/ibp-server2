@@ -12,7 +12,7 @@ function getHash(file) {
 }
 //
 async function exist(hash) {
-  return null;
+  // return null;
   // Revisar si ya existe en Firebase
   const doc = await db.collection("media").doc(hash).get();
   if (doc.exists) return doc.data();
@@ -41,7 +41,7 @@ exports.uploadImage = async (req, res) => {
     let isSaved = await exist(hash);
     if (isSaved) {
       return res.json({
-        isSaved,
+        data: { ...isSaved },
         message: "Imagen ya subida",
       });
     }
@@ -90,7 +90,7 @@ exports.uploadVideo = async (req, res) => {
     let isSaved = await exist(hash);
     if (isSaved)
       return res.json({
-        isSaved,
+        data: { ...isSaved },
         message: "Imagen ya subida",
       });
 
@@ -107,7 +107,7 @@ exports.uploadVideo = async (req, res) => {
     );
     let data = response.data;
     data.resourceType = "video"; // asegurar que es video
-    let media = await saveOnFirebase(hash, data);
+    const media = MediaFile.fromMap(data);
 
     let thumb = await getVideoThumbnailBuffer(req.file);
     if (thumb && thumb.buffer) {
@@ -120,6 +120,8 @@ exports.uploadVideo = async (req, res) => {
         }
       );
     }
+    await saveOnFirebase(hash, media.toMap());
+
     res.json({ data: media, message: "Video subido" });
   } catch (err) {
     console.error(err);

@@ -10,10 +10,9 @@ class MediaFile {
     this.resourceType = data.resourceType || "image";
     this.width = data.width || 0;
     this.height = data.height || 0;
-    this.size = data.size || 0;
+    this.size = data.size || data.bytes || 0;
     this.thumb = data.thumb?.url || data.thumb || null;
     this.medium = data.medium?.url || data.medium || null;
-    this.bytes = data.bytes || null;
     this.createdAt = data.time
       ? new Date(data.time)
       : data.createdAt
@@ -38,7 +37,6 @@ class MediaFile {
       size: this.size,
       thumb: this.thumb,
       medium: this.medium,
-      bytes: this.bytes,
       createdAt: this.createdAt.toISOString(),
       format: this.format,
       // ...this.extra, // todos los campos extras
