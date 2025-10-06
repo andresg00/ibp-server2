@@ -52,6 +52,10 @@ class MediaFile {
     return new MediaFile({ ...this.toMap(), ...updates });
   }
 }
+const ffmpegPath = require("ffmpeg-static"); // 1. Importa la ruta
+
+// 2. Dile a fluent-ffmpeg dónde está el programa
+ffmpeg.setFfmpegPath(ffmpegPath);
 
 async function getVideoThumbnailBuffer(file) {
   return new Promise((resolve, reject) => {
