@@ -14,7 +14,7 @@ function getHash(file) {
 }
 //
 async function exist(hash) {
-  return null;
+  // return null;
   // Revisar si ya existe en Firebase
   const doc = await db.collection("media").doc(hash).get();
   if (doc.exists) return doc.data();
