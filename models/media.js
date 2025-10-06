@@ -55,7 +55,12 @@ class MediaFile {
 
 async function getVideoThumbnailBuffer(file) {
   return new Promise((resolve, reject) => {
-    const tempPath = `/tmp/temp_video_${Date.now()}.mp4`;
+    const tmpDir =
+      process.platform === "win32" ? path.join(process.cwd(), "tmp") : "/tmp";
+    if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
+
+    const tempPath = path.join(tmpDir, `temp_video_${Date.now()}.mp4`);
+
     const bufferChunks = [];
     const stream = new PassThrough();
 
