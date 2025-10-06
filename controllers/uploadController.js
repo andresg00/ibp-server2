@@ -1,6 +1,6 @@
 const axios = require("axios");
 // const fs = require("fs");
-
+const mime = require("mime-types");
 const FormData = require("form-data");
 const { getBufferHash } = require("../utils/hash");
 const db = require("../config/firebase");
@@ -81,22 +81,43 @@ exports.uploadImage = async (req, res) => {
 
     const form = new FormData();
 
-    // FORMA CORRECTA: Envía el buffer directamente.
-    // La librería se encarga de todo. Añadir el filename es una buena práctica.
-    form.append("image", req.file.buffer, { filename: req.file.originalname });
+    // <-- 2. Determina el ContentType correcto usando el nombre del archivo
+    const contentType =
+      mime.lookup(req.file.originalname) || "application/octet-stream";
 
-    // FORMA INCORRECTA (la que tienes ahora):
-    // form.append("image", req.file.buffer.toString("base64"));
+    // <-- 3. Pasa el contentType en las opciones del 'append'
+    form.append("image", req.file.buffer, {
+      filename: req.file.originalname,
+      contentType: contentType, // ¡AQUÍ ESTÁ LA MAGIA!
+    });
 
     const response = await axios.post(
       `https://api.imgbb.com/1/upload?key=${imgbbApiKey}`,
       form,
       {
         headers: {
-          ...form.getHeaders(), // Esto es crucial para que axios envíe los encabezados correctos de multipart/form-data
+          ...form.getHeaders(),
         },
       }
     );
+    // const form = new FormData();
+
+    // // FORMA CORRECTA: Envía el buffer directamente.
+    // // La librería se encarga de todo. Añadir el filename es una buena práctica.
+    // form.append("image", req.file.buffer, { filename: req.file.originalname });
+
+    // // FORMA INCORRECTA (la que tienes ahora):
+    // // form.append("image", req.file.buffer.toString("base64"));
+
+    // const response = await axios.post(
+    //   `https://api.imgbb.com/1/upload?key=${imgbbApiKey}`,
+    //   form,
+    //   {
+    //     headers: {
+    //       ...form.getHeaders(), // Esto es crucial para que axios envíe los encabezados correctos de multipart/form-data
+    //     },
+    //   }
+    // );
 
     if (response.status === 200 && response.data && response.data.data) {
       // const imageData = response.data.data;
@@ -111,7 +132,13 @@ exports.uploadImage = async (req, res) => {
       });
     }
   } catch (e) {
-    console.error("Error en uploadToImgBB:", e);
+    let message = e && e.toString ? e.toString() : String(e);
+    // Oculta la API key en el mensaje de error si aparece
+    message = message.replace(
+      new RegExp(process.env.IMGBB_API_KEY, "g"),
+      "APIKEY..."
+    );
+    console.error("Error en uploadToImgBB:", message);
     res.status(500).json({ error: "Error subiendo imagen a ImgBB" });
   }
 };
