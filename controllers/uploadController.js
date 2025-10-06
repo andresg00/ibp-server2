@@ -66,10 +66,14 @@ exports.uploadImage = async (req, res) => {
     // --- NUEVO MÉTODO BASADO EN STACK OVERFLOW ---
 
     const body = new FormData();
+    // 2. Añadir la API Key al formulario
+    try {
+      body.set("key", imgbbApiKey);
+    } catch (e) {
+      body.append("key", imgbbApiKey);
+    }
     // 1. Añadir la imagen al formulario
     body.append("image", req.file.buffer, { filename: req.file.originalname });
-    // 2. Añadir la API Key al formulario
-    body.append("key", imgbbApiKey);
 
     const response = await axios({
       method: "post",
