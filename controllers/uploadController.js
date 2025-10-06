@@ -1,4 +1,6 @@
 const axios = require("axios");
+const fs = require("fs");
+
 const FormData = require("form-data");
 const { getBufferHash } = require("../utils/hash");
 const db = require("../config/firebase");
@@ -54,7 +56,9 @@ exports.uploadImage = async (req, res) => {
     }
 
     const form = new FormData();
-    form.append("image", req.file.buffer, { filename: req.file.originalname });
+    // form.append("image", req.file.buffer, { filename: req.file.originalname });
+    form.append("image", req.file.buffer.toString("base64"));
+    // console.log("File exists:", fs.existsSync(req.file.path));
 
     const response = await axios.post(
       `https://api.imgbb.com/1/upload?key=${imgbbApiKey}`,
