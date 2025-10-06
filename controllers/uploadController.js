@@ -1,5 +1,5 @@
 const axios = require("axios");
-const fs = require("fs");
+// const fs = require("fs");
 
 const FormData = require("form-data");
 const { getBufferHash } = require("../utils/hash");
@@ -48,6 +48,7 @@ exports.uploadImage = async (req, res) => {
       });
     }
 
+    require("dotenv").config();
     const imgbbApiKey = process.env.IMGBB_APY_KEY;
     if (!imgbbApiKey) {
       return res.status(500).json({
@@ -88,6 +89,7 @@ exports.uploadVideo = async (req, res) => {
   try {
     // if (!req.file)
     //   return res.status(400).json({ error: "No se envió archivo" });
+    require("dotenv").config();
     const CLOUDINARY_PRESET = process.env.UPLOAD_PRESET;
     const CLOUDINARY_CLOUD_NAME = process.env.CLOUD_NAME;
     let hash = getHash(req.file);

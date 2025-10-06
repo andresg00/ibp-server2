@@ -1,5 +1,6 @@
 node_modules/
 .env
 dist/
-.vscode/
 firebase-admin.json
+.DS_Store
+.vscode/
