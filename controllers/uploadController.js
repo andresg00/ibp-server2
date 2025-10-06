@@ -48,8 +48,7 @@ exports.uploadImage = async (req, res) => {
       });
     }
 
-    require("dotenv").config();
-    const imgbbApiKey = process.env.IMGBB_APY_KEY;
+    const imgbbApiKey = process.env.IMGBB_API_KEY;
     if (!imgbbApiKey) {
       return res.status(500).json({
         error: "No se encontró la API key de ImgBB en las variables de entorno",
@@ -89,7 +88,6 @@ exports.uploadVideo = async (req, res) => {
   try {
     // if (!req.file)
     //   return res.status(400).json({ error: "No se envió archivo" });
-    require("dotenv").config();
     const CLOUDINARY_PRESET = process.env.UPLOAD_PRESET;
     const CLOUDINARY_CLOUD_NAME = process.env.CLOUD_NAME;
     let hash = getHash(req.file);
