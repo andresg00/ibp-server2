@@ -56,14 +56,22 @@ exports.uploadImage = async (req, res) => {
     }
 
     const form = new FormData();
-    // form.append("image", req.file.buffer, { filename: req.file.originalname });
-    form.append("image", req.file.buffer.toString("base64"));
-    // console.log("File exists:", fs.existsSync(req.file.path));
+
+    // FORMA CORRECTA: Envía el buffer directamente.
+    // La librería se encarga de todo. Añadir el filename es una buena práctica.
+    form.append("image", req.file.buffer, { filename: req.file.originalname });
+
+    // FORMA INCORRECTA (la que tienes ahora):
+    // form.append("image", req.file.buffer.toString("base64"));
 
     const response = await axios.post(
       `https://api.imgbb.com/1/upload?key=${imgbbApiKey}`,
       form,
-      { headers: form.getHeaders() }
+      {
+        headers: {
+          ...form.getHeaders(), // Esto es crucial para que axios envíe los encabezados correctos de multipart/form-data
+        },
+      }
     );
 
     if (response.status === 200 && response.data && response.data.data) {
