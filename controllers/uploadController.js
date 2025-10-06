@@ -36,6 +36,30 @@ exports.uploadImage = async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ error: "No se envió archivo" });
     }
+
+    // --- INICIO DEL BLOQUE DE DEPURACIÓN ---
+    console.log("--- INICIANDO DEPURACIÓN DE UPLOAD EN ONRENDER ---");
+    console.log("1. ¿Existe req.file?", !!req.file);
+    // Mostramos el objeto req.file sin el buffer para no llenar el log
+    console.log("2. Metadata de req.file:", {
+      fieldname: req.file.fieldname,
+      originalname: req.file.originalname,
+      encoding: req.file.encoding,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+    });
+    console.log("3. ¿Existe el buffer dentro de req.file?", !!req.file.buffer);
+    console.log(
+      "4. Tamaño del buffer (bytes):",
+      req.file.buffer ? req.file.buffer.length : "Buffer no encontrado"
+    );
+    console.log(
+      "5. ¿API Key de ImgBB está disponible?:",
+      process.env.IMGBB_API_KEY ? "Sí, encontrada." : "NO, FALTA LA API KEY."
+    );
+    console.log("--- FIN DE LA DEPURACIÓN ---");
+    // --- FIN DEL BLOQUE DE DEPURACIÓN ---
+
     if (isVideo(req.file.originalname)) {
       return this.uploadVideo(req, res);
     }
