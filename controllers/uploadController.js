@@ -14,7 +14,7 @@ function getHash(file) {
 }
 //
 async function exist(hash) {
-  // return null;
+  return null;
   // Revisar si ya existe en Firebase
   const doc = await db.collection("media").doc(hash).get();
   if (doc.exists) return doc.data();
@@ -37,28 +37,12 @@ exports.uploadImage = async (req, res) => {
       return res.status(400).json({ error: "No se envió archivo" });
     }
 
-    // --- INICIO DEL BLOQUE DE DEPURACIÓN ---
-    console.log("--- INICIANDO DEPURACIÓN DE UPLOAD EN ONRENDER ---");
-    console.log("1. ¿Existe req.file?", !!req.file);
-    // Mostramos el objeto req.file sin el buffer para no llenar el log
-    console.log("2. Metadata de req.file:", {
-      fieldname: req.file.fieldname,
-      originalname: req.file.originalname,
-      encoding: req.file.encoding,
-      mimetype: req.file.mimetype,
-      size: req.file.size,
-    });
-    console.log("3. ¿Existe el buffer dentro de req.file?", !!req.file.buffer);
     console.log(
-      "4. Tamaño del buffer (bytes):",
-      req.file.buffer ? req.file.buffer.length : "Buffer no encontrado"
+      "Subiendo archivo:",
+      req.file.originalname,
+      mime.lookup(req.file.originalname),
+      req.file.size
     );
-    console.log(
-      "5. ¿API Key de ImgBB está disponible?:",
-      process.env.IMGBB_API_KEY ? "Sí, encontrada." : "NO, FALTA LA API KEY."
-    );
-    console.log("--- FIN DE LA DEPURACIÓN ---");
-    // --- FIN DEL BLOQUE DE DEPURACIÓN ---
 
     if (isVideo(req.file.originalname)) {
       return this.uploadVideo(req, res);
@@ -79,28 +63,22 @@ exports.uploadImage = async (req, res) => {
       });
     }
 
-    // --- NUEVA ESTRATEGIA: USAR BASE64 ---
+    // --- NUEVO MÉTODO BASADO EN STACK OVERFLOW ---
 
-    // 1. Convertir el buffer de la imagen a una cadena de texto Base64.
-    const imageAsBase64 = req.file.buffer.toString("base64");
+    const body = new FormData();
+    // 1. Añadir la imagen al formulario
+    body.append("image", req.file.buffer, { filename: req.file.originalname });
+    // 2. Añadir la API Key al formulario
+    body.append("key", imgbbApiKey);
 
-    // 2. Crear el cuerpo de la petición como 'URL Encoded'.
-    // Usamos URLSearchParams para manejar esto correctamente.
-    const params = new URLSearchParams();
-    params.append("image", imageAsBase64);
+    const response = await axios({
+      method: "post",
+      url: "https://api.imgbb.com/1/upload", // URL limpia, sin API key
+      data: body,
+      // No se especifican headers, axios lo hace por nosotros
+    });
 
-    // 3. Realizar la petición POST.
-    const response = await axios.post(
-      `https://api.imgbb.com/1/upload?key=${imgbbApiKey}`,
-      params, // Enviamos los parámetros URL-encoded
-      {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-      }
-    );
-
-    // --- FIN DE LA NUEVA ESTRATEGIA ---
+    // --- FIN DEL NUEVO MÉTODO ---
 
     if (response.status === 200 && response.data && response.data.data) {
       // const imageData = response.data.data;
@@ -108,6 +86,8 @@ exports.uploadImage = async (req, res) => {
       media.resourceType = "image"; // asegurar que es imagen
 
       res.json({ data: media, message: "Imagen subida a ImgBB" });
+
+      console.log("Proseso completado.", media.source);
     } else {
       res.status(500).json({
         error: "Error subiendo imagen a ImgBB",
