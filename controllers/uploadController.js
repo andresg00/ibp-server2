@@ -79,45 +79,28 @@ exports.uploadImage = async (req, res) => {
       });
     }
 
-    const form = new FormData();
+    // --- NUEVA ESTRATEGIA: USAR BASE64 ---
 
-    // <-- 2. Determina el ContentType correcto usando el nombre del archivo
-    const contentType =
-      mime.lookup(req.file.originalname) || "application/octet-stream";
+    // 1. Convertir el buffer de la imagen a una cadena de texto Base64.
+    const imageAsBase64 = req.file.buffer.toString("base64");
 
-    // <-- 3. Pasa el contentType en las opciones del 'append'
-    form.append("image", req.file.buffer, {
-      filename: req.file.originalname,
-      contentType: contentType, // ¡AQUÍ ESTÁ LA MAGIA!
-    });
+    // 2. Crear el cuerpo de la petición como 'URL Encoded'.
+    // Usamos URLSearchParams para manejar esto correctamente.
+    const params = new URLSearchParams();
+    params.append("image", imageAsBase64);
 
+    // 3. Realizar la petición POST.
     const response = await axios.post(
       `https://api.imgbb.com/1/upload?key=${imgbbApiKey}`,
-      form,
+      params, // Enviamos los parámetros URL-encoded
       {
         headers: {
-          ...form.getHeaders(),
+          "Content-Type": "application/x-www-form-urlencoded",
         },
       }
     );
-    // const form = new FormData();
 
-    // // FORMA CORRECTA: Envía el buffer directamente.
-    // // La librería se encarga de todo. Añadir el filename es una buena práctica.
-    // form.append("image", req.file.buffer, { filename: req.file.originalname });
-
-    // // FORMA INCORRECTA (la que tienes ahora):
-    // // form.append("image", req.file.buffer.toString("base64"));
-
-    // const response = await axios.post(
-    //   `https://api.imgbb.com/1/upload?key=${imgbbApiKey}`,
-    //   form,
-    //   {
-    //     headers: {
-    //       ...form.getHeaders(), // Esto es crucial para que axios envíe los encabezados correctos de multipart/form-data
-    //     },
-    //   }
-    // );
+    // --- FIN DE LA NUEVA ESTRATEGIA ---
 
     if (response.status === 200 && response.data && response.data.data) {
       // const imageData = response.data.data;
