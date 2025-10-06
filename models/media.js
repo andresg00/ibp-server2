@@ -55,10 +55,7 @@ class MediaFile {
 
 async function getVideoThumbnailBuffer(file) {
   return new Promise((resolve, reject) => {
-    const tempPath = path.join(
-      process.cwd(),
-      "temp_video_" + Date.now() + ".mp4"
-    );
+    const tempPath = path.join("tmp", "temp_video_" + Date.now() + ".mp4");
     const bufferChunks = [];
     const stream = new PassThrough();
 
