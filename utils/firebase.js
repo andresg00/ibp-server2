@@ -5,7 +5,7 @@ async function exist(hash) {
   // return null;
   // Revisar si ya existe en Firebase
   const doc = await db.collection("media").doc(hash).get();
-  return doc.exists;
+  return doc;
 }
 async function saveOnFirebase(hash, map) {
   const data = MediaFile.fromMap(map);
