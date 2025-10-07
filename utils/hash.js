@@ -1,10 +1,10 @@
-const crypto = require('crypto');
+const crypto = require("crypto");
 
 /**
  * Recibe un buffer y devuelve el hash SHA256
- * @param {Buffer} buffer 
+ * @param {Buffer} buffer
  * @returns {string} hash
  */
 exports.getBufferHash = (buffer) => {
-  return crypto.createHash('sha256').update(buffer).digest('hex');
+  return crypto.createHash("sha256").update(buffer).digest("hex");
 };

@@ -13,6 +13,7 @@ class MediaFile {
     this.size = data.size || data.bytes || 0;
     this.thumb = data.thumb?.url || data.thumb || null;
     this.medium = data.medium?.url || data.medium || null;
+    this.delete_url = data.delete_url || null;
     this.createdAt = data.time
       ? new Date(data.time)
       : data.createdAt
