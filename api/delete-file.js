@@ -1,18 +1,6 @@
-const { initializeApp, cert, getApps } = require("firebase-admin/app");
-const { getStorage } = require("firebase-admin/storage");
-const { exist } = require("../utils/firebase");
-
-// Configuración de Firebase Admin
-const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_CERT);
-const storageBucket = process.env.FIREBASE_STORAGE_BUCKET;
-
-if (!getApps().length) {
-  initializeApp({
-    credential: cert(serviceAccount),
-    storageBucket: storageBucket,
-  });
-}
-
+const { existMedia } = require("./firestore-media");
+const { getVideoThumbnailRoute } = require("./local-paths");
+const { bucket } = require("../config/firebase");
 // Eliminar archivo de forma segura
 const deleteFile = async (req, res) => {
   // Solo permitimos peticiones POST
@@ -31,35 +19,12 @@ const deleteFile = async (req, res) => {
     }
 
     // Verificamos si el archivo existe
-    const doc = await exist(id);
+    const doc = await existMedia(id);
     if (!doc.exists) {
       return res.status(404).json({ error: "El archivo no existe." });
     }
-
-    const type = doc.data().type;
-    if (typeof type === "string" && type.toLowerCase().startsWith("video")) {
-      //delete video thumbnail
-      const thumbnailFileName = `thumb_${id}${doc.data().ext}.png`;
-      const thumbnailPathInStorage = `thumbnails/${thumbnailFileName}`;
-      const thumbnailFile = getStorage().bucket().file(thumbnailPathInStorage);
-      try {
-        await thumbnailFile.delete();
-      } catch (err) {
-        console.error("Error eliminando thumbnail del video:", err);
-      }
-    }
-
-    // Eliminar metadatos del archivo en Firebase (por ejemplo, Firestore)
-    const ext = doc.data().ext;
-    const filePathInStorage = `uploads/${id}${ext}`;
-    const bucket = getStorage().bucket();
-    const file = bucket.file(filePathInStorage);
-    try {
-      // Eliminamos el archivo
-      await file.delete();
-    } catch (ex) {
-      console.error("Error eliminando metadatos en Firestore:", ex);
-    }
+    const data = doc.data();
+    deleteFile2(data);
     try {
       // Luego eliminamos los metadatos en Firestore
       await doc.ref.delete();
@@ -73,5 +38,29 @@ const deleteFile = async (req, res) => {
     res.status(500).json({ error: "No se pudo eliminar el archivo." });
   }
 };
+async function deleteFile2(data) {
+  const mediaFile = require("../models/media").MediaFile.fromMap(data);
+  const type = mediaFile.type;
+  const ext = mediaFile.ext;
+  if (type.toLowerCase().startsWith("video")) {
+    //delete video thumbnail
+    const thumbnailPathInStorage = getVideoThumbnailRoute(id, ext);
+    const thumbnailFile = bucket.file(thumbnailPathInStorage);
+    try {
+      await thumbnailFile.delete();
+    } catch (err) {
+      console.error("Error eliminando thumbnail del video:", err);
+    }
+  }
+
+  const filePathInStorage = `uploads/${id}${ext}`;
+  const file = bucket.file(filePathInStorage);
+  try {
+    // Eliminamos el archivo
+    await file.delete();
+  } catch (ex) {
+    console.error("Error eliminando metadatos en Firestore:", ex);
+  }
+}
 
 module.exports = deleteFile;

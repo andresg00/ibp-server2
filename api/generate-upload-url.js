@@ -1,21 +1,8 @@
-// /api/generate-upload-url.js
-// Usamos 'require' en lugar de 'import'
-const { initializeApp, cert, getApps } = require("firebase-admin/app");
-const { getStorage } = require("firebase-admin/storage");
-const { exist } = require("../utils/firebase");
+const { bucket } = require("../config/firebase");
+const { existMedia } = require("../api/firestore-media");
+const { processFile } = require("../api/prosses-media");
 // --- Configuración de Firebase Admin ---
 // Leemos las credenciales desde las variables de entorno de Vercel
-const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_CERT);
-const storageBucket = process.env.FIREBASE_STORAGE_BUCKET; // ej: "mi-proyecto.appspot.com"
-
-// Inicializamos Firebase Admin SOLO si no se ha hecho antes
-if (!getApps().length) {
-  initializeApp({
-    credential: cert(serviceAccount),
-    storageBucket: storageBucket,
-  });
-}
-// --- Fin de la Configuración ---
 
 // Esta es la función principal que Vercel ejecutará
 const generateUploadUrl = async (req, res) => {
@@ -40,18 +27,27 @@ const generateUploadUrl = async (req, res) => {
         error: 'El campo "contentType" debe ser de tipo imagen, video o audio.',
       });
     }
-    if (exist(hash) == true) {
-      return res
-        .status(200)
-        .json({ message: "El archivo ya existe.", hash: hash });
+    const doc = await existMedia(hash);
+    if (doc.exists) {
+      const data = doc.data();
+      data.id = doc.id;
+      return res.status(200).json({ message: "El archivo ya existe.", data });
     }
-    const bucket = getStorage().bucket();
     const fileExtension = fileName.includes(".")
       ? "." + fileName.split(".").pop()
       : "";
     const filePathInStorage = `uploads/${hash}${fileExtension}`;
     const file = bucket.file(filePathInStorage);
-
+    const [exists] = await file.exists();
+    if (exists) {
+      await processFile(hash, fileExtension, contentType);
+      const doc = await existMedia(hash);
+      const data = doc.data();
+      data.id = doc.id;
+      return res
+        .status(200)
+        .json({ message: "El archivo ya existe en storage.", data });
+    }
     // 2. Configuramos la URL firmada
     const options = {
       version: "v4",

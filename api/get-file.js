@@ -1,4 +1,4 @@
-const db = require("../config/firebase");
+const { db, bucket } = require("../config/firebase");
 const checkMedia = async (req, res) => {
   const { hash } = req.body;
 
@@ -7,7 +7,7 @@ const checkMedia = async (req, res) => {
     let doc = await docRef.get();
 
     // Espera hasta que el documento exista (máx 30s)
-    const maxWait = 30000;
+    const maxWait = 60000;
     const interval = 500;
     let waited = 0;
 
@@ -26,4 +26,8 @@ const checkMedia = async (req, res) => {
     res.status(500).send({ error: "Error al verificar el documento." });
   }
 };
+function getfile(name) {
+  return bucket.file(name);
+}
 exports.checkMedia = checkMedia;
+exports.getfile = getfile;

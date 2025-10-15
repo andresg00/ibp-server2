@@ -3,6 +3,9 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 require("dotenv").config();
 
+const uploadRoutes = require("./routes/upload");
+// const testUrlStream = require("./api/extract-metadata").testUrlStream;
+// getFromFirebase = require("./video-analizer").getFromFirebase;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -16,9 +19,8 @@ app.post("/api/generate-upload-url", generateUploadUrl);
 app.post("/api/delete-file", deleteFile);
 app.post("/api/check-media", checkMedia);
 // Rutas
-const uploadRoutes = require("./routes/upload");
 app.use("/upload", uploadRoutes);
 
 app.get("/", (req, res) => res.send("Servidor funcionando 🚀"));
 
-app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
+app.listen(PORT, () => console.log("`Servidor en puerto ${PORT}`"));
