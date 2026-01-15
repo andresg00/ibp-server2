@@ -35,7 +35,10 @@ app.post("/api/collection", getCollection);
 // app.use("/upload", uploadRoutes);
 
 app.get("/", (req, res) => res.send("Servidor funcionando 🚀"));
-app.get("/favicon.ico", (req, res) => res.sendStatus(204));
-app.get("/favicon.png", (req, res) => res.sendStatus(204));
+// app.get("/favicon.ico", (req, res) => res.sendStatus(204));
+// app.get("/favicon.png", (req, res) => res.sendStatus(204));
+app.get(["/favicon.ico", "/favicon.png"], (req, res) => {
+  res.status(204).end(); // No Content, sin warning
+});
 
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
