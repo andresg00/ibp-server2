@@ -28,6 +28,53 @@ const getDocument = async (req, res) => {
   }
 };
 
+const getDocumentWhithPassword = async (req, res) => {
+  // Solo permitimos peticiones POST
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Método no permitido. Usa POST." });
+  }
+  try {
+    const { path, password } = req.body;
+    if (!path || !password) {
+      return res.status(400).json({
+        error: "Faltan parámetros en el cuerpo de la solicitud.",
+      });
+    }
+    let isValid = await verifyPassword(path, password);
+    if (!isValid) {
+      return res.status(403).json({ error: "Contraseña incorrecta." });
+    }
+    return getDocument(req, res);
+  } catch (error) {
+    console.error("Error al obtener el documento:", error);
+    return res.status(500).json({ error: "Error interno del servidor." });
+  }
+};
+const verifyPassword = async (path, password) => {
+  return password === path;
+};
+const getCollectionWhithPassword = async (req, res) => {
+  // Solo permitimos peticiones POST
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Método no permitido. Usa POST." });
+  }
+  try {
+    const { path, password } = req.body;
+    if (!path || !password) {
+      return res.status(400).json({
+        error: "Faltan parámetros en el cuerpo de la solicitud.",
+      });
+    }
+    let isValid = await verifyPassword(path, password);
+    if (!isValid) {
+      return res.status(403).json({ error: "Contraseña incorrecta." });
+    }
+    return getCollection(req, res);
+  } catch (error) {
+    console.error("Error al obtener el documento:", error);
+    return res.status(500).json({ error: "Error interno del servidor." });
+  }
+};
 const getCollection = async (req, res) => {
   // Solo permitimos peticiones POST
   if (req.method !== "POST") {
@@ -54,3 +101,5 @@ const getCollection = async (req, res) => {
 };
 module.exports.getDocument = getDocument;
 module.exports.getCollection = getCollection;
+module.exports.getDocumentWhithPassword = getDocumentWhithPassword;
+module.exports.getCollectionWhithPassword = getCollectionWhithPassword;

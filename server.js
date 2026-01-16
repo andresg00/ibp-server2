@@ -35,7 +35,12 @@ app.use(express.urlencoded({ extended: true }));
 const generateUploadUrl = require("./conmon/api/generate-upload-url"); // Importa la función directamente
 const deleteFile = require("./conmon/api/delete-file"); // Importa la función directamente
 const checkMedia = require("./conmon/api/get-file").checkMedia; // Importa la función directamente
-const { getDocument, getCollection } = require("./conmon/api/get-document"); // Importa la función directamente
+const {
+  getDocument,
+  getCollection,
+  getCollectionWhithPassword,
+  getDocumentWhithPassword,
+} = require("./conmon/api/get-document"); // Importa la función directamente
 // --- AQUÍ ESTÁ LA CLAVE ---
 // Crea la ruta exacta que tu app de Flutter está buscando
 app.post("/api/generate-upload-url", generateUploadUrl);
@@ -43,6 +48,8 @@ app.post("/api/delete-file", deleteFile);
 app.post("/api/check-media", checkMedia);
 app.post("/api/document", getDocument);
 app.post("/api/collection", getCollection);
+app.post("/api/document-with-password", getDocumentWhithPassword);
+app.post("/api/collection-with-password", getCollectionWhithPassword);
 
 // Rutas
 // app.use("/upload", uploadRoutes);
