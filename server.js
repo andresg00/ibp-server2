@@ -41,6 +41,7 @@ const {
   getCollectionWhithPassword,
   getDocumentWhithPassword,
 } = require("./conmon/api/get-document"); // Importa la función directamente
+const { repairEventPhotos } = require("./repair");
 // --- AQUÍ ESTÁ LA CLAVE ---
 // Crea la ruta exacta que tu app de Flutter está buscando
 app.post("/api/generate-upload-url", generateUploadUrl);
@@ -61,4 +62,5 @@ app.get(["/favicon.ico", "/favicon.png"], (req, res) => {
   res.status(204).end(); // No Content, sin warning
 });
 
+// repairEventPhotos();
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));

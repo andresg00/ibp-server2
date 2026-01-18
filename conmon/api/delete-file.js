@@ -25,12 +25,6 @@ const deleteFile = async (req, res) => {
     }
     const data = doc.data();
     deleteFile2(data, id);
-    try {
-      // Luego eliminamos los metadatos en Firestore
-      await doc.ref.delete();
-    } catch (ex2) {
-      console.error("Error eliminando metadatos en Firestore:", ex2);
-    }
 
     res.status(200).json({ message: "Archivo eliminado correctamente." });
   } catch (error) {
@@ -40,19 +34,6 @@ const deleteFile = async (req, res) => {
 };
 async function deleteFile2(data, id) {
   const mediaFile = require("../models/media").MediaFile.fromMap(data);
-  const type = mediaFile.type;
-  if (type.toLowerCase().startsWith("video")) {
-    //delete video thumbnail
-    const thumbnailPathInStorage = getVideoThumbnailRoute(id, ".png");
-    const thumbnailFile = bucket.file(thumbnailPathInStorage);
-    try {
-      await thumbnailFile.delete();
-      console.log("Thumbnail del video eliminado.");
-    } catch (err) {
-      console.error("Error eliminando thumbnail del video:", err);
-    }
-  }
-
   const ext = mediaFile.ext;
   const filePathInStorage = `uploads/${id}.${ext}`;
   const file = bucket.file(filePathInStorage);
