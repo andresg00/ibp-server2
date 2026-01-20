@@ -2,7 +2,7 @@ const express = require("express");
 const app = express();
 const PORT = process.env.PORT || 3000;
 require("dotenv").config();
-
+const { compressExistingImages } = require("./conmon/api/compress");
 const cors = require("cors"); // <-- 1. Importar 'cors'
 const allowedOrigins = [
   "http://localhost:4200",
@@ -23,7 +23,7 @@ app.use(
       }
       return callback(null, true);
     },
-  })
+  }),
 );
 // const uploadRoutes = require("./routes/upload");
 // const testUrlStream = require("./api/extract-metadata").testUrlStream;
@@ -61,6 +61,6 @@ app.get("/", (req, res) => res.send("Servidor funcionando 🚀"));
 app.get(["/favicon.ico", "/favicon.png"], (req, res) => {
   res.status(204).end(); // No Content, sin warning
 });
-
+// compressExistingImages();
 // repairEventPhotos();
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));

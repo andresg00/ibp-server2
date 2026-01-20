@@ -24,7 +24,20 @@ const deleteFile = async (req, res) => {
       return res.status(404).json({ error: "El archivo no existe." });
     }
     const data = doc.data();
-    deleteFile2(data, id);
+    const mediaFile = require("../models/media").MediaFile.fromMap(data);
+    const ext = mediaFile.ext;
+    const filePathInStorage = `uploads/${id}.${ext}`;
+    const file = bucket.file(filePathInStorage);
+    try {
+      // Eliminamos el archivo
+      await file.delete();
+      console.log("Archivo eliminado:", filePathInStorage);
+    } catch (ex) {
+      console.error("Error eliminando el archivo del almacenamiento.");
+      console.log("Eliminando referencia en Firestore.");
+      doc.ref.delete();
+      return res;
+    }
 
     res.status(200).json({ message: "Archivo eliminado correctamente." });
   } catch (error) {
@@ -32,18 +45,5 @@ const deleteFile = async (req, res) => {
     res.status(500).json({ error: "No se pudo eliminar el archivo." });
   }
 };
-async function deleteFile2(data, id) {
-  const mediaFile = require("../models/media").MediaFile.fromMap(data);
-  const ext = mediaFile.ext;
-  const filePathInStorage = `uploads/${id}.${ext}`;
-  const file = bucket.file(filePathInStorage);
-  try {
-    // Eliminamos el archivo
-    await file.delete();
-    console.log("Archivo eliminado:", filePathInStorage);
-  } catch (ex) {
-    console.error("Error eliminando metadatos en Firestore:", ex);
-  }
-}
 
 module.exports = deleteFile;

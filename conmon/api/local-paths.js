@@ -1,15 +1,28 @@
 function getUploadsPath() {
   return "uploads/";
 }
-function getThumbnailPath() {
-  return `${getUploadsPath()}video-thumbnails/`;
+
+function getThumbnailPathX400(id) {
+  return `${getUploadsPath()}thumbnails-x400/` + id + ".png";
 }
-function getVideoThumbnailRoute(hash, ext) {
-  //delete video thumbnail
-  const thumbnailFileName = `${hash}${ext}`;
-  const thumbnailPathInStorage = `${getThumbnailPath()}${thumbnailFileName}`;
-  return thumbnailPathInStorage;
+
+function getThumbnailPathX800(id) {
+  return `${getUploadsPath()}thumbnails-x800/` + id + ".png";
 }
-exports.getThumbnailPath = getThumbnailPath;
+function isThumbnail(filePath) {
+  // Verificamos si la ruta contiene alguna de las subcarpetas de miniaturas
+  return (
+    filePath.includes("thumbnails-x400/") ||
+    filePath.includes("thumbnails-x800/") ||
+    filePath.includes("video-images/")
+  );
+}
+function getVideoImagesPath(id) {
+  return `${getUploadsPath()}video-images/` + id + ".png";
+}
+
+exports.getVideoImagesPath = getVideoImagesPath;
 exports.getUploadsPath = getUploadsPath;
-exports.getVideoThumbnailRoute = getVideoThumbnailRoute;
+exports.isThumbnail = isThumbnail;
+exports.getThumbnailPathX400 = getThumbnailPathX400;
+exports.getThumbnailPathX800 = getThumbnailPathX800;
