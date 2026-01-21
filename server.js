@@ -12,17 +12,21 @@ const allowedOrigins = [
 
 app.use(
   cors({
-    origin: function (origin, callback) {
-      // Permitir peticiones sin origen (como apps móviles o Postman)
-      if (!origin) return callback(null, true);
+    origin: "*",
 
-      if (allowedOrigins.indexOf(origin) === -1) {
-        const msg =
-          "El policy de CORS para este sitio no permite acceso desde el origen especificado.";
-        return callback(new Error(msg), false);
-      }
-      return callback(null, true);
-    },
+    // function (origin, callback) {
+    //   // Permitir peticiones sin origen (como apps móviles o Postman)
+    //   if (!origin) return callback(null, true);
+
+    //   if (allowedOrigins.indexOf(origin) === -1) {
+    //     const msg =
+    //       "El policy de CORS para este sitio no permite acceso desde el origen especificado.";
+    //     return callback(new Error(msg), false);
+    //   }
+    //   return callback(null, true);
+    // },
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
 // const uploadRoutes = require("./routes/upload");
