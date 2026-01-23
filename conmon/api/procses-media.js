@@ -1,22 +1,105 @@
 const mime = require("mime");
-const { getThumbnailPath, getUploadsPath } = require("./local-paths");
-const { getVideoThumbnailRoute } = require("./local-paths");
-async function saveThumbnailToStorage(bucket, tempThumbnailPath, hash) {
-  const thumbnailPathInStorage = getVideoThumbnailRoute(hash, ".png");
+const { getUrl } = require("./extract-url-from-firebase-file");
+const {
+  getThumbnailPathX400,
+  getThumbnailPathX800,
+  getUploadsPath,
+  getVideoImagesPath,
+  isThumbnail,
+} = require("./local-paths");
+const { setMediaToFirestore } = require("./firestore-media");
+async function generateThumbs(file, data) {
+  const filePath = file.name;
+  const hash = filePath.split("/").pop().split(".")[0];
+  const bucket = file.bucket;
+  const x400ThumbPath = getThumbnailPathX400(hash);
+  const x800ThumbPath = getThumbnailPathX800(hash);
+
+  const { getThumbnails, getThumbnailsFromBufer } = require("./extract-frame");
+  var res;
+  if (data instanceof Buffer) {
+    res = await getThumbnailsFromBufer(data, [200, 400]);
+  } else {
+    res = await getThumbnails(data, [200, 400]);
+  }
+  const thumb400 = res[0];
+  const thumb800 = res[1];
+  let thumb400Url;
+  let thumb800Url;
+  if (thumb400) {
+    // await bucket.upload(thumb400, { destination: x400ThumbPath });
+    thumb400Url = await saveToStorage(bucket, thumb400, x400ThumbPath);
+  }
+  if (thumb800) {
+    // await bucket.upload(thumb800, { destination: x800ThumbPath });
+    thumb800Url = await saveToStorage(bucket, thumb800, x800ThumbPath);
+  }
+  return { thumb400: thumb400Url, thumb800: thumb800Url };
+}
+async function saveToStorage(bucket, filePath, savedPath) {
   // Subir el thumbnail al bucket en la ruta correcta
-  const thumbnailUploadResult = await bucket.upload(tempThumbnailPath, {
-    destination: thumbnailPathInStorage,
+  const thumbnailUploadResult = await bucket.upload(filePath, {
+    destination: savedPath,
     metadata: { contentType: "image/png" },
   });
 
   const thumbnailFile = thumbnailUploadResult[0];
-  const { getUrl } = require("./extract-url-from-firebase-file");
-  const thumbnailUrl = await getUrl(thumbnailFile.name, "03-09-2491");
+  const thumbnailUrl = await getUrl(thumbnailFile.name);
 
   console.log("Thumbnail subido. URL:", thumbnailUrl);
   return thumbnailUrl;
 }
+async function processDeleteFile(file) {
+  const filePath = file.name;
+  // Agrega más extensiones según sea necesario
+  if (!filePath.startsWith(getUploadsPath())) {
+    return console.log("Ignorando archivo fuera de 'uploads/'.");
+  }
+  if (isThumbnail(filePath)) {
+    return console.log("Ignorando archivo en " + filePath);
+  }
+  console.log("Procesando eliminación de archivo:", filePath);
+  const bucket = file.bucket;
+  const fileName = file.name.split("/").pop();
+  const hash = fileName.split(".")[0];
+  // Eliminar miniaturas de video
+  const thumb400Path = getThumbnailPathX400(hash);
+  const thumb800Path = getThumbnailPathX800(hash);
+  const videImasgesPath = getVideoImagesPath(hash);
+  const ext = fileName.split(".").pop().toLowerCase();
+
+  // Intentar eliminar todos los archivos sin detener si alguno no existe
+  const deletePromises = [
+    bucket
+      .file(thumb400Path)
+      .delete()
+      .catch((err) => console.log("Error al eliminar thumbnail 400:", err)),
+    bucket
+      .file(thumb800Path)
+      .delete()
+      .catch((err) => console.log("Error al eliminar thumbnail 800:", err)),
+  ];
+
+  // @ts-ignore
+  if (mime.getType(ext)?.startsWith("video/")) {
+    deletePromises.push(
+      bucket
+        .file(videImasgesPath)
+        .delete()
+        .catch((err) => console.log("Error al eliminar video images:", err)),
+    );
+  }
+
+  await Promise.all(deletePromises);
+
+  console.log("Miniaturas eliminadas para el archivo:", file.name);
+
+  const { deleteFromFirestore } = require("./firestore-media");
+  await deleteFromFirestore(hash);
+  console.log("Metadatos eliminados de Firestore para el hash:", hash);
+}
 async function processFile(file) {
+  // compressExistingImages();
   //   const bucket = admin.storage().bucket(object.bucket);
   //   const file = bucket.file("....");
   const filePath = file.name;
@@ -24,13 +107,14 @@ async function processFile(file) {
   if (!filePath.startsWith(getUploadsPath())) {
     return console.log("Ignorando archivo fuera de 'uploads/'.");
   }
-  if (filePath.startsWith(getThumbnailPath())) {
-    return console.log("Ignorando archivo en 'thumbnails/'.");
+  if (isThumbnail(filePath)) {
+    return console.log("Ignorando archivo en " + filePath);
   }
   const fileName = filePath.split("/").pop();
   const ext = fileName.split(".").pop().toLowerCase();
   const contentType =
     file.metadata.contentType ||
+    // @ts-ignore
     mime.getType(ext) ||
     "application/octet-stream";
   // if (fileName.startsWith("thumb_")) {
@@ -39,52 +123,67 @@ async function processFile(file) {
   if (contentType.startsWith("video/")) {
     // generar thumbnail
     const hash = fileName.split(".")[0];
-    const thumbnailPathInStorage = getVideoThumbnailRoute(hash, ".png");
+    const thumbnailPathInStorage = getVideoImagesPath(hash);
     const bucket = file.bucket;
-    let thumbUrl = null;
-    const { getUrl } = require("./extract-url-from-firebase-file");
-    const url = await getUrl(filePath, "03-09-2491");
+    let imagePreview = null;
+    let frameBuffer = null;
+
+    const url = await getUrl(filePath);
     const exist = await bucket.file(thumbnailPathInStorage).exists();
     if (!exist[0]) {
       const { extractFrameFromVideo } = require("./extract-frame");
       const frame = await extractFrameFromVideo(url);
-      if (frame) {
-        const bucket = file.bucket;
-        thumbUrl = await saveThumbnailToStorage(bucket, frame, hash);
 
-        console.log("Thumbnail generado y subido:", thumbUrl);
+      if (frame) {
+        const fs = require("fs");
+        const bucket = file.bucket;
+        frameBuffer = await fs.promises.readFile(frame);
+        imagePreview = await saveToStorage(
+          bucket,
+          frame,
+          thumbnailPathInStorage,
+        );
+
+        console.log("Thumbnail generado y subido:", imagePreview);
       } else {
         console.log("No se pudo extraer el frame del video.");
       }
     } else {
-      thumbUrl = await getUrl(thumbnailPathInStorage, "03-09-2491");
+      imagePreview = await getUrl(thumbnailPathInStorage);
     }
-
-    const { getMetadata } = require("./extract-video-metadata-from-url");
-    const metadata = await getMetadata(url);
-    metadata.thumb = thumbUrl;
-    metadata.source = url;
-    metadata.format = ext;
-    metadata.type = contentType;
-    console.log("Metadatos extraídos:", metadata);
-    const { setMediaToFirestore } = require("./firestore-media");
-    const media = await setMediaToFirestore(hash, metadata);
-    console.log("Metadatos guardados en Firestore:", media);
+    try {
+      const { getMetadata } = require("./extract-video-metadata-from-url");
+      const metadata = await getMetadata(url);
+      const thumbs = await generateThumbs(file, frameBuffer);
+      metadata.thumbs400 = thumbs.thumb400;
+      metadata.thumbs800 = thumbs.thumb800;
+      metadata.thumb = imagePreview;
+      metadata.source = url;
+      metadata.format = ext;
+      metadata.type = contentType;
+      console.log("Metadatos (VIDEO) extraídos:", metadata);
+      const media = await setMediaToFirestore(hash, metadata);
+      console.log("Metadatos (VIDEO) guardados en Firestore:", media);
+    } catch (error) {
+      console.error("Error al extraer metadatos de video:", error);
+    }
   } else if (contentType.startsWith("image/")) {
     // procesar imagen
-    const { imageMetadata } = require("./extract-image-metadata-from-url");
-    const { getUrl } = require("./extract-url-from-firebase-file");
-    const url = await getUrl(filePath, "03-09-2491");
-    const metadata = await imageMetadata(url);
+    const { getMetadataFromUrl } = require("./extract-image-metadata-from-url");
+    const url = await getUrl(filePath);
+
+    const metadata = await getMetadataFromUrl(url);
+    const thumbs = await generateThumbs(file, url);
+    metadata.thumbs400 = thumbs.thumb400;
+    metadata.thumbs800 = thumbs.thumb800;
     if (metadata) {
       metadata.source = url;
       metadata.format = ext;
       metadata.type = contentType;
-      console.log("Metadatos EXIF extraídos:", metadata);
+      console.log("Metadatos (EXIF) extraídos:", metadata);
       const hash = fileName.split(".")[0];
-      const { setMediaToFirestore } = require("./firestore-media");
       const media = await setMediaToFirestore(hash, metadata);
-      console.log("Metadatos guardados en Firestore:", media);
+      console.log("Metadatos (EXIF) guardados en Firestore:", media);
     }
   }
   //  else if (contentType.startsWith("audio/")) {
@@ -95,4 +194,6 @@ async function processFile(file) {
   }
   return console.log("Proceso completado.");
 }
+
 exports.processFile = processFile;
+exports.processDeleteFile = processDeleteFile;

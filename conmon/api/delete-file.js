@@ -1,5 +1,4 @@
 const { existMedia } = require("./firestore-media");
-const { getVideoThumbnailRoute } = require("./local-paths");
 const { bucket } = require("../config/firebase");
 // Eliminar archivo de forma segura
 const deleteFile = async (req, res) => {
