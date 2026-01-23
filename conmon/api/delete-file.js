@@ -14,7 +14,7 @@ const deleteFile = async (req, res) => {
     if (!id) {
       return res
         .status(400)
-        .json({ error: 'Faltan los campos "hash" o "ext".' });
+        .json({ error: 'Faltan los campos requeridos: "id".' });
     }
 
     // Verificamos si el archivo existe
