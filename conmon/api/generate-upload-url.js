@@ -21,12 +21,12 @@ const generateUploadUrl = async (req, res) => {
         .json({ error: 'Faltan los campos "fileName" o "contentType".' });
     }
 
-    const endPoint = contentType.split("/")[0];
-    if (!["image", "video", "audio"].includes(endPoint)) {
-      return res.status(400).json({
-        error: 'El campo "contentType" debe ser de tipo imagen, video o audio.',
-      });
-    }
+    // const endPoint = contentType.split("/")[0];
+    // if (!["image", "video", "audio"].includes(endPoint)) {
+    //   return res.status(400).json({
+    //     error: 'El campo "contentType" debe ser de tipo imagen, video o audio.',
+    //   });
+    // }
     const doc = await existMedia(hash);
     if (doc.exists) {
       const data = doc.data();
@@ -65,4 +65,5 @@ const generateUploadUrl = async (req, res) => {
     res.status(500).json({ error: "No se pudo generar la URL de subida." });
   }
 };
+
 module.exports = generateUploadUrl;

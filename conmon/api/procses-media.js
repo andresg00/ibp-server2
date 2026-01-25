@@ -38,9 +38,13 @@ async function generateThumbs(file, data) {
 }
 async function saveToStorage(bucket, filePath, savedPath) {
   // Subir el thumbnail al bucket en la ruta correcta
+  const contentType =
+    // @ts-ignore
+    mime.getType(filePath.split(".").pop().toLowerCase()) ||
+    "application/octet-stream";
   const thumbnailUploadResult = await bucket.upload(filePath, {
     destination: savedPath,
-    metadata: { contentType: "image/png" },
+    metadata: { contentType: contentType },
   });
 
   const thumbnailFile = thumbnailUploadResult[0];
@@ -63,36 +67,38 @@ async function processDeleteFile(file) {
   const fileName = file.name.split("/").pop();
   const hash = fileName.split(".")[0];
   // Eliminar miniaturas de video
-  const thumb400Path = getThumbnailPathX400(hash);
-  const thumb800Path = getThumbnailPathX800(hash);
-  const videImasgesPath = getVideoImagesPath(hash);
+
   const ext = fileName.split(".").pop().toLowerCase();
-
   // Intentar eliminar todos los archivos sin detener si alguno no existe
-  const deletePromises = [
-    bucket
-      .file(thumb400Path)
-      .delete()
-      .catch((err) => console.log("Error al eliminar thumbnail 400:", err)),
-    bucket
-      .file(thumb800Path)
-      .delete()
-      .catch((err) => console.log("Error al eliminar thumbnail 800:", err)),
-  ];
-
   // @ts-ignore
-  if (mime.getType(ext)?.startsWith("video/")) {
-    deletePromises.push(
+  const type = mime.getType(ext);
+  if (type.startsWith("image/") || type.startsWith("video/")) {
+    const thumb400Path = getThumbnailPathX400(hash);
+    const thumb800Path = getThumbnailPathX800(hash);
+    const deletePromises = [
       bucket
-        .file(videImasgesPath)
+        .file(thumb400Path)
         .delete()
-        .catch((err) => console.log("Error al eliminar video images:", err)),
-    );
+        .catch((err) => console.log("Error al eliminar thumbnail 400:", err)),
+      bucket
+        .file(thumb800Path)
+        .delete()
+        .catch((err) => console.log("Error al eliminar thumbnail 800:", err)),
+    ];
+
+    if (type?.startsWith("video/")) {
+      const videImasgesPath = getVideoImagesPath(hash);
+      deletePromises.push(
+        bucket
+          .file(videImasgesPath)
+          .delete()
+          .catch((err) => console.log("Error al eliminar video images:", err)),
+      );
+    }
+
+    await Promise.all(deletePromises);
+    console.log("Miniaturas eliminadas para el archivo:", file.name);
   }
-
-  await Promise.all(deletePromises);
-
-  console.log("Miniaturas eliminadas para el archivo:", file.name);
 
   const { deleteFromFirestore } = require("./firestore-media");
   await deleteFromFirestore(hash);
@@ -120,9 +126,9 @@ async function processFile(file) {
   // if (fileName.startsWith("thumb_")) {
   //   return console.log("Ignorando thumbnail.");
   // }
+  const hash = fileName.split(".")[0];
   if (contentType.startsWith("video/")) {
     // generar thumbnail
-    const hash = fileName.split(".")[0];
     const thumbnailPathInStorage = getVideoImagesPath(hash);
     const bucket = file.bucket;
     let imagePreview = null;
@@ -181,16 +187,25 @@ async function processFile(file) {
       metadata.format = ext;
       metadata.type = contentType;
       console.log("Metadatos (EXIF) extraídos:", metadata);
-      const hash = fileName.split(".")[0];
+      // const hash = fileName.split(".")[0];
       const media = await setMediaToFirestore(hash, metadata);
       console.log("Metadatos (EXIF) guardados en Firestore:", media);
     }
-  }
-  //  else if (contentType.startsWith("audio/")) {
-  //   //procesar audio
-  // }
-  else {
-    return console.log("Tipo de archivo no soportado:", contentType);
+  } else {
+    const metadata = {};
+    const url = await getUrl(filePath);
+    metadata.source = url;
+    metadata.format = ext;
+    metadata.type = contentType;
+    metadata.size = file.metadata.size || 0;
+    metadata.createdAt = file.metadata.timeCreated || new Date().toISOString();
+    // const hash = fileName.split(".")[0];
+    const media = await setMediaToFirestore(hash, metadata);
+
+    console.log(
+      "Metadatos guardados en Firestore para otro tipo de archivo:",
+      media,
+    );
   }
   return console.log("Proceso completado.");
 }

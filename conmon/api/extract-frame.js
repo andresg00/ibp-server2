@@ -71,21 +71,60 @@ async function getThumbnails(imageUrl, widths = [200, 400]) {
     return [];
   }
 }
+// async function getThumbnailsFromBufer(imageBuffer, widths = [200, 400]) {
+//   try {
+//     const uniqueName = `${Date.now()}.jpg`;
+//     // 2. PROCESAMIENTO PARALELO (Más rápido que un bucle for)
+//     const processingPromises = widths.map(async (width) => {
+//       try {
+//         // Generamos nombre basado solo en el ancho
+//         const thumbnailName = `x${width}_${uniqueName}`;
+//         const thumbnailPath = path.join(os.tmpdir(), thumbnailName);
+
+//         await sharp(imageBuffer)
+//           .resize(width) // Al pasar solo un valor, Sharp mantiene la proporción (aspect ratio)
+//           .toFile(thumbnailPath);
+
+//         console.log(`✅ Miniatura de ancho ${width}px creada.`);
+//         return thumbnailPath;
+//       } catch (err) {
+//         console.error(`❌ Error procesando ancho ${width}:`, err.message);
+//         return null;
+//       }
+//     });
+
+//     // Esperamos a que todas las conversiones terminen
+//     const results = await Promise.all(processingPromises);
+
+//     // Filtramos los nulos en caso de que alguna escala haya fallado
+//     return results.filter((path) => path !== null);
+//   } catch (error) {
+//     console.error(
+//       `❌ Error crítico en getThumbnails (prosesando la imagen): ${error.message}`,
+//     );
+//     return [];
+//   }
+// }
+
 async function getThumbnailsFromBufer(imageBuffer, widths = [200, 400]) {
   try {
-    const uniqueName = `${Date.now()}.jpg`;
-    // 2. PROCESAMIENTO PARALELO (Más rápido que un bucle for)
+    // 1. CAMBIO CLAVE: Usamos extensión .webp
+    const uniqueName = `${Date.now()}.webp`;
+
     const processingPromises = widths.map(async (width) => {
       try {
-        // Generamos nombre basado solo en el ancho
         const thumbnailName = `x${width}_${uniqueName}`;
         const thumbnailPath = path.join(os.tmpdir(), thumbnailName);
 
         await sharp(imageBuffer)
-          .resize(width) // Al pasar solo un valor, Sharp mantiene la proporción (aspect ratio)
+          .resize(width)
+          // 2. CONFIGURACIÓN WEBP:
+          // quality: 80 es el estándar de la industria (buen balance peso/calidad).
+          // effort: 6 hace que tarde unos milisegundos más en crearla, pero comprime mejor el archivo final.
+          .webp({ quality: 80, effort: 4 })
           .toFile(thumbnailPath);
 
-        console.log(`✅ Miniatura de ancho ${width}px creada.`);
+        console.log(`✅ Miniatura WebP de ancho ${width}px creada.`);
         return thumbnailPath;
       } catch (err) {
         console.error(`❌ Error procesando ancho ${width}:`, err.message);
@@ -93,15 +132,10 @@ async function getThumbnailsFromBufer(imageBuffer, widths = [200, 400]) {
       }
     });
 
-    // Esperamos a que todas las conversiones terminen
     const results = await Promise.all(processingPromises);
-
-    // Filtramos los nulos en caso de que alguna escala haya fallado
     return results.filter((path) => path !== null);
   } catch (error) {
-    console.error(
-      `❌ Error crítico en getThumbnails (prosesando la imagen): ${error.message}`,
-    );
+    console.error(`❌ Error crítico en getThumbnails: ${error.message}`);
     return [];
   }
 }
