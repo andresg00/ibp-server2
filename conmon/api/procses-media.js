@@ -165,7 +165,7 @@ async function processFile(file) {
       metadata.thumbs800 = thumbs.thumb800;
       metadata.thumb = imagePreview;
       metadata.source = url;
-      metadata.format = ext;
+      metadata.ext = ext;
       metadata.type = contentType;
       console.log("Metadatos (VIDEO) extraídos:", metadata);
       const media = await setMediaToFirestore(hash, metadata);
@@ -184,7 +184,7 @@ async function processFile(file) {
     metadata.thumbs800 = thumbs.thumb800;
     if (metadata) {
       metadata.source = url;
-      metadata.format = ext;
+      metadata.ext = ext;
       metadata.type = contentType;
       console.log("Metadatos (EXIF) extraídos:", metadata);
       // const hash = fileName.split(".")[0];
@@ -195,7 +195,7 @@ async function processFile(file) {
     const metadata = {};
     const url = await getUrl(filePath);
     metadata.source = url;
-    metadata.format = ext;
+    metadata.ext = ext;
     metadata.type = contentType;
     metadata.size = file.metadata.size || 0;
     metadata.createdAt = file.metadata.timeCreated || new Date().toISOString();
