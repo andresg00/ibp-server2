@@ -118,6 +118,17 @@ async function processFile(file) {
   }
   const fileName = filePath.split("/").pop();
   const ext = fileName.split(".").pop().toLowerCase();
+
+  try {
+    const [metadata] = await file.getMetadata();
+    // Ahora 'file.metadata' ya no estará vacío,
+    // y también puedes usar la variable 'metadata' directamente.
+    file.metadata = metadata;
+  } catch (error) {
+    console.error("Error al obtener metadatos del archivo:", error);
+    return;
+  }
+
   const contentType =
     file.metadata.contentType ||
     // @ts-ignore
@@ -126,9 +137,17 @@ async function processFile(file) {
   // if (fileName.startsWith("thumb_")) {
   //   return console.log("Ignorando thumbnail.");
   // }
-  const hash = fileName.split(".")[0];
+
+  console.log("Metadatos del archivo:", file.metadata);
+  const customMetadata = file.metadata.metadata || {};
+  console.log(
+    "Metadatos personalizados recibidos del cliente:",
+    customMetadata,
+  );
+
   if (contentType.startsWith("video/")) {
     // generar thumbnail
+    const hash = fileName.split(".")[0];
     const thumbnailPathInStorage = getVideoImagesPath(hash);
     const bucket = file.bucket;
     let imagePreview = null;
@@ -167,8 +186,12 @@ async function processFile(file) {
       metadata.source = url;
       metadata.ext = ext;
       metadata.type = contentType;
+
       console.log("Metadatos (VIDEO) extraídos:", metadata);
-      const media = await setMediaToFirestore(hash, metadata);
+      const media = await setMediaToFirestore(hash, {
+        ...metadata,
+        meta: customMetadata,
+      });
       console.log("Metadatos (VIDEO) guardados en Firestore:", media);
     } catch (error) {
       console.error("Error al extraer metadatos de video:", error);
@@ -187,8 +210,11 @@ async function processFile(file) {
       metadata.ext = ext;
       metadata.type = contentType;
       console.log("Metadatos (EXIF) extraídos:", metadata);
-      // const hash = fileName.split(".")[0];
-      const media = await setMediaToFirestore(hash, metadata);
+      const hash = fileName.split(".")[0];
+      const media = await setMediaToFirestore(hash, {
+        ...metadata,
+        meta: customMetadata,
+      });
       console.log("Metadatos (EXIF) guardados en Firestore:", media);
     }
   } else {
@@ -199,8 +225,11 @@ async function processFile(file) {
     metadata.type = contentType;
     metadata.size = file.metadata.size || 0;
     metadata.createdAt = file.metadata.timeCreated || new Date().toISOString();
-    // const hash = fileName.split(".")[0];
-    const media = await setMediaToFirestore(hash, metadata);
+    const hash = fileName.split(".")[0];
+    const media = await setMediaToFirestore(hash, {
+      ...metadata,
+      meta: customMetadata,
+    });
 
     console.log(
       "Metadatos guardados en Firestore para otro tipo de archivo:",
