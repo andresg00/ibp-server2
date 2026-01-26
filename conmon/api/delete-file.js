@@ -23,8 +23,7 @@ const deleteFile = async (req, res) => {
       return res.status(404).json({ error: "El archivo no existe." });
     }
     const data = doc.data();
-    const mediaFile = require("../models/media").MediaFile.fromMap(data);
-    const ext = mediaFile.ext;
+    const ext = data.ext;
     const filePathInStorage = `uploads/${id}.${ext}`;
     const file = bucket.file(filePathInStorage);
     try {

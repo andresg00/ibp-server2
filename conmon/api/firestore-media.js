@@ -1,6 +1,5 @@
-const { MediaFile } = require("../models/media");
+const { validateDate } = require("../models/media");
 const { db } = require("../config/firebase");
-const e = require("express");
 async function existMedia(hash) {
   // return null;
   // Revisar si ya existe en Firebase
@@ -8,9 +7,14 @@ async function existMedia(hash) {
   return doc;
 }
 async function setMediaToFirestore(hash, map) {
-  const data = MediaFile.fromMap(map);
-  await db.collection("media").doc(hash).set(data.toMap());
-  return data;
+  try {
+    const date = validateDate(map.createdAt);
+    map.createdAt = date;
+    await db.collection("media").doc(hash).set(map);
+  } catch (error) {
+    console.error(`❌ Error crítico en setMediaToFirestore: ${error.message}`);
+  }
+  return map;
 }
 async function deleteFromFirestore(hash) {
   return await db.collection("media").doc(hash).delete();

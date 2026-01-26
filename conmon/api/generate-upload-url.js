@@ -13,7 +13,7 @@ const generateUploadUrl = async (req, res) => {
 
   try {
     // 1. Recibimos el nombre y tipo del archivo desde el cliente
-    const { hash, fileName, contentType } = req.body;
+    const { hash, fileName, contentType, metadata } = req.body;
 
     if (!fileName || !contentType) {
       return res
@@ -21,12 +21,14 @@ const generateUploadUrl = async (req, res) => {
         .json({ error: 'Faltan los campos "fileName" o "contentType".' });
     }
 
-    // const endPoint = contentType.split("/")[0];
-    // if (!["image", "video", "audio"].includes(endPoint)) {
-    //   return res.status(400).json({
-    //     error: 'El campo "contentType" debe ser de tipo imagen, video o audio.',
-    //   });
-    // }
+    // 2. Preparamos los headers de extensión
+    const extensionHeaders = {};
+    if (metadata) {
+      Object.entries(metadata).forEach(([key, value]) => {
+        // Importante: Google requiere el prefijo x-goog-meta-
+        extensionHeaders[`x-goog-meta-${key}`] = value;
+      });
+    }
     const doc = await existMedia(hash);
     if (doc.exists) {
       const data = doc.data();
@@ -55,6 +57,9 @@ const generateUploadUrl = async (req, res) => {
       expires: Date.now() + 10 * 60 * 1000, // El link será válido por 10 minutos
       contentType: contentType, // El tipo de archivo debe coincidir
     };
+    if (Object.keys(extensionHeaders).length > 0) {
+      options.extensionHeaders = extensionHeaders;
+    }
 
     // 3. Generamos la URL y la enviamos de vuelta al cliente
     const [signedUrl] = await file.getSignedUrl(options);
