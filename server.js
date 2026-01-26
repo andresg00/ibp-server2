@@ -39,6 +39,11 @@ const generateUploadUrl = require("./conmon/api/generate-upload-url"); // Import
 const deleteFile = require("./conmon/api/delete-file"); // Importa la función directamente
 const checkMedia = require("./conmon/api/get-file").checkMedia; // Importa la función directamente
 const {
+  getDescription,
+  execute,
+  reformulate,
+} = require("./conmon/api/ai-rest-api");
+const {
   getDocument,
   getCollection,
   getCollectionWhithPassword,
@@ -53,6 +58,9 @@ app.post("/api/document", getDocument);
 app.post("/api/collection", getCollection);
 app.post("/api/document-with-password", getDocumentWhithPassword);
 app.post("/api/collection-with-password", getCollectionWhithPassword);
+app.post("/api/ai-description", getDescription);
+app.post("/api/ai-execute", execute);
+app.post("/api/ai-reformulate", reformulate);
 
 // Rutas
 // app.use("/upload", uploadRoutes);
