@@ -1,5 +1,9 @@
 const express = require("express");
 const app = express();
+// Aumenta el límite a 10MB o 50MB dependiendo de cuántas fotos envíes
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ limit: "10mb", extended: true }));
+
 const PORT = process.env.PORT || 3000;
 require("dotenv").config();
 const cors = require("cors"); // <-- 1. Importar 'cors'

@@ -76,8 +76,7 @@ const execute = async (req, res) => {
  */
 const getDescription = async (req, res) => {
   try {
-    const { images } = req.body;
-    // Flutter envía: { "images": [ { "inlineData": { "data": "...", "mimeType": "..." } } ] }
+    const { images, rules, context } = req.body;
 
     if (!images || !Array.isArray(images)) {
       return res
@@ -85,14 +84,35 @@ const getDescription = async (req, res) => {
         .json({ error: "Faltan imágenes o formato inválido" });
     }
 
-    const prompt =
-      "Describe estas imágenes técnicamente desde la perspectiva de un ingeniero de obra.";
+    // Construimos el prompt dinámicamente
+    const prompt = `
+  ERES UN INGENIEIRO RESIDENTE. TU MISIÓN ES REDACTAR UN REPORTE BASADO EN ESTE CONTEXTO:
+  "${context}"
 
-    // El SDK espera un array donde el primer elemento es el prompt y los demás son los inlineData
+  REGLAS DE INTERPRETACIÓN:
+  1. El CONTEXTO manda: Si el contexto dice "fundición", no digas "prefabricado". Si dice "triangulares", busca e identifica esas formas.
+  2. Usa las imágenes para validar y enriquecer el reporte técnico, no para contradecir el contexto.
+  3. REGLAS PERSONALIZADAS: ${rules || "Ninguna"}
+
+  REGLAS DE FORMATO (ESTRICTAS):
+  - Texto plano, sin Markdown (** o #).
+  - Habla en primera persona o impersonal (ej: "Hemos fundido...", "Se completó la fundición...").
+  - Prohibido decir "En la imagen se observa".
+`;
+
     const result = await model.generateContent([prompt, ...images]);
     const response = await result.response;
 
-    res.status(200).json({ result: response.text().trim() });
+    // Limpieza de seguridad para asegurar texto plano puro
+    let cleanText = response
+      .text()
+      .replace(/\*\*/g, "")
+      .replace(/\*/g, "")
+      .replace(/#/g, "")
+      .replace(/[\[\]]/g, "") // Elimina corchetes por si acaso
+      .trim();
+
+    res.status(200).json({ result: cleanText });
   } catch (error) {
     console.error("Error en Gemini (Description):", error.message);
     res.status(500).json({ error: error.message });
