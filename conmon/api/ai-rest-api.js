@@ -29,7 +29,18 @@ const reformulate = async (req, res) => {
 
     res.status(200).json({ result: output });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Error en reformulate:", error.message);
+
+    if (error.message.includes("429")) {
+      return res.status(429).json({
+        error:
+          "Has agotado el límite de peticiones gratuitas. Por favor, espera un momento antes de intentar de nuevo.",
+      });
+    }
+
+    res
+      .status(500)
+      .json({ error: "Error interno del servidor al procesar la solicitud." });
   }
 };
 
