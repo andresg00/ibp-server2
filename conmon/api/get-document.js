@@ -75,13 +75,25 @@ const getCollectionWhithPassword = async (req, res) => {
     return res.status(500).json({ error: "Error interno del servidor." });
   }
 };
+const validAccessKeys = [
+  "aB3xK9mN2pL7qR5sT8vW4yZ1uC6dE0fG",
+  "hI9jK2lM5nO8pQ1rS4tU7vW3xY6zA0bC",
+  "dE7fG2hI5jK8lM1nO4pQ9rS2tU5vW8xY",
+  "zAb3Cd6eF9gH2iJ5kL8mN1oP4qR7sT0uV",
+  "wX3yZ6aB9cD2eF5gH8iJ1kL4mN7oP0qR",
+  undefined,
+  null,
+]; // Ejemplo de claves válidas
 const getCollection = async (req, res) => {
   // Solo permitimos peticiones POST
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Método no permitido. Usa POST." });
   }
   try {
-    const { path } = req.body;
+    const { path, accessKey } = req.body;
+    if (!validAccessKeys.includes(accessKey)) {
+      return res.status(403).json({ error: "Clave de acceso inválida." });
+    }
     if (!path) {
       return res.status(400).json({
         error: "Falta el parámetro 'path' en el cuerpo de la solicitud.",
