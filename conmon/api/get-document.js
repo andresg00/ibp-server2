@@ -3,7 +3,7 @@ const { db } = require("../config/firebase");
 // Leemos las credenciales desde las variables de entorno de Vercel
 // const validAccessKeys = process.env.FIREBASE_ACCESS_KEYS;
 const validAccessKeys = JSON.parse(process.env.FIREBASE_ACCESS_KEYS);
-// validAccessKeys.push(undefined);
+validAccessKeys.push(undefined);
 // Esta es la función principal que Vercel ejecutará
 const getDocument = async (req, res) => {
   // Solo permitimos peticiones POST
@@ -43,6 +43,7 @@ const getCollection = async (req, res) => {
     if (!validAccessKeys.includes(accessKey)) {
       return res.status(403).json({ error: "Clave de acceso inválida." });
     }
+
     if (!path) {
       return res.status(400).json({
         error: "Falta el parámetro 'path' en el cuerpo de la solicitud.",
