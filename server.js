@@ -48,9 +48,11 @@ const {
   reformulate,
 } = require("./conmon/api/ai-rest-api");
 const { getDocument, getCollection } = require("./conmon/api/get-document"); // Importa la función directamente
-// --- AQUÍ ESTÁ LA CLAVE ---
+const getAlbumImages =
+  require("./conmon/photos/phots-public-album").getAlbumImages; // Importa la función directamente
 
 // Crea la ruta exacta que tu app de Flutter está buscando
+app.post("/api/get-album-images", getAlbumImages);
 app.post("/api/generate-upload-url", generateUploadUrl);
 app.post("/api/delete-file", deleteFile);
 app.post("/api/check-media", checkMedia);
@@ -60,8 +62,12 @@ app.post("/api/ai-description", getDescription);
 app.post("/api/ai-execute", execute);
 app.post("/api/ai-reformulate", reformulate);
 
-// Rutas
-// app.use("/upload", uploadRoutes);
+const {
+  searchMaterials,
+  updateMaterial,
+} = require("./conmon/api/materials-search");
+app.get("/api/search-materials", searchMaterials);
+app.post("/api/update-material", updateMaterial);
 
 app.get("/", (req, res) => res.send("Servidor funcionando 🚀"));
 // app.get("/favicon.ico", (req, res) => res.sendStatus(204));
