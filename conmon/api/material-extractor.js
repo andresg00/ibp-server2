@@ -16,14 +16,12 @@ function extraerProducto($) {
   }
 
   const final = {
-    id: producto.id,
-    nombre: producto.nombre,
-    marca: producto.marca,
+    id: producto.id || "",
+    nombre: producto.nombre || "Sin Nombre",
+    marca: producto.marca || "Desconocida",
     precio: producto.precio?.valor || null,
     unidad: producto.precio?.unidad || "Und",
-    rating: producto.promedioResenas
-      ? parseFloat(producto.promedioResenas)
-      : null,
+    rating: producto.promedioResenas ? parseFloat(producto.promedioResenas) : 0,
     images: producto.imagenes.map((img) => img.url),
     // @ts-ignore
     numero_reviews: parseInt(producto.totalResenas) || 0,
