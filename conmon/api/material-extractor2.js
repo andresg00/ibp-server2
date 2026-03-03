@@ -186,34 +186,120 @@ function extraerProductos($) {
 
   return null;
 }
+exports.extraerProductos = extraerProductos;
 
-// --- EJEMPLO DE USO (con Node.js y Cheerio) ---
-/*
-const axios = require('axios');
-const cheerio = require('cheerio');
+const axios = require("axios");
+const cheerio = require("cheerio");
 
-async function main() {
+class HomecenterScraper {
+  constructor() {
+    // @ts-ignore
+    this.session = axios.create({
+      timeout: 30000,
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        Accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Accept-Language": "es-CO,es;q=0.9,en;q=0.8",
+        "Accept-Encoding": "gzip, deflate, br",
+        Connection: "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
+        // Algunos sitios pueden necesitar esta cabecera
+        Referer: "https://www.google.com/",
+      },
+      withCredentials: true, // Importante para mantener cookies
+    });
+  }
+
+  async obtenerUbicacionesDisponibles() {
     try {
-        const url = 'https://www.homecenter.com.co/homecenter-co/search/?Ntt=ladrillo';
-        const response = await axios.get(url, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-            }
-        });
-        const $ = cheerio.load(response.data);
-        
-        const productos = extraerProductos($);
-        
-        if (productos) {
-            console.log(`Se extrajeron ${productos.length} productos.`);
-            console.log('Ejemplo del primer producto:', JSON.stringify(productos[0], null, 2));
-        } else {
-            console.log('No se pudieron extraer productos.');
+      // Intenta obtener ubicaciones desde el HTML o API
+      const response = await this.session.get(
+        "https://www.homecenter.com.co/homecenter-co/",
+      );
+      const $ = cheerio.load(response.data);
+
+      // Busca datos de ubicación en el HTML o scripts
+      const ubicaciones = [];
+
+      // Ejemplo: busca en elementos con clase location
+      $('[class*="location"], [class*="Location"]').each((i, el) => {
+        const texto = $(el).text();
+        if (
+          texto.includes("Bogotá") ||
+          texto.includes("Medellín") ||
+          texto.includes("Cali")
+        ) {
+          ubicaciones.push(texto.trim());
         }
+      });
+
+      return ubicaciones;
     } catch (error) {
-        console.error('Error al obtener la página:', error.message);
+      console.error("Error obteniendo ubicaciones:", error.message);
+      return [];
     }
+  }
+
+  async establecerUbicacionPorComuna(comuna) {
+    try {
+      // Mapeo de comunas conocidas (esto deberías completarlo)
+      const comunas = {
+        "Bogotá - Chapinero": { comunaId: "11001", ciudadId: "11001" },
+        "Medellín - El Poblado": { comunaId: "05001", ciudadId: "05001" },
+        "Cali - Norte": { comunaId: "76001", ciudadId: "76001" },
+        "Barranquilla - Norte": { comunaId: "08001", ciudadId: "08001" },
+      };
+
+      const ubicacion = comunas[comuna];
+      if (!ubicacion) {
+        console.log("Comuna no encontrada en el mapa");
+        return false;
+      }
+
+      // Método 1: Establecer vía API
+      try {
+        await this.session.post(
+          "https://www.homecenter.com.co/homecenter-co/api/geo/set-location",
+          {
+            comunaId: ubicacion.comunaId,
+            ciudadId: ubicacion.ciudadId,
+          },
+        );
+        console.log(`Ubicación establecida: ${comuna}`);
+        return true;
+      } catch (apiError) {
+        console.log("API de ubicación falló, intentando método alternativo...");
+      }
+
+      // Método 2: Simular la selección en el frontend (más complejo)
+      // Esto requeriría obtener tokens CSRF, etc.
+
+      return false;
+    } catch (error) {
+      console.error("Error estableciendo ubicación:", error.message);
+      return false;
+    }
+  }
+
+  async buscarProductos(termino, ubicacion = null) {
+    try {
+      // Si se especifica ubicación, intenta establecerla primero
+      if (ubicacion) {
+        await this.establecerUbicacionPorComuna(ubicacion);
+      }
+
+      // Hacer la búsqueda
+      const url = `https://www.homecenter.com.co/homecenter-co/search/?Ntt=${encodeURIComponent(termino)}`;
+      console.log(`Buscando: ${url}`);
+
+      return await this.session.get(url);
+    } catch (error) {
+      console.error("Error en búsqueda:", error.message);
+      return null;
+    }
+  }
 }
 
-*/
-exports.extraerProductos = extraerProductos;
+exports.HomecenterScraper = HomecenterScraper;

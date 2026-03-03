@@ -3,6 +3,7 @@ const cheerio = require("cheerio");
 const { extraerProducto: extraerProduct2 } = require("./material-extractor");
 const {
   extraerProductos: extraerProductos2,
+  HomecenterScraper,
 } = require("./material-extractor2");
 const header = {
   // Es crucial imitar un navegador real para evitar ser bloqueado
@@ -18,17 +19,34 @@ const searchMaterials = async (req, res) => {
   // 1. Obtener el término de búsqueda de los query params (ej. /api/scrape?q=cemento+argos)
   //https://www.homecenter.com.co/homecenter-co/category/cat5510024/cementos-concreto-y-morteros/?sTerm=cenmento
   const query = req.query.q || "cemento argos";
-  const url = `https://www.homecenter.com.co/homecenter-co/search/?Ntt=${encodeURIComponent(query)}`;
-
-  console.log(`Scrapeando URL: ${url}`);
+  // const url = `https://www.homecenter.com.co/homecenter-co/search/?Ntt=${encodeURIComponent(query)}`;
 
   try {
     //aplicar timeout para evitar bloqueos
     // @ts-ignore
-    const response = await axios.get(url, {
-      headers: header,
-      // timeout: 60 * 1000, // 30 segundos de timeout
-    });
+    // const response = await axios.get(url, {
+    //   headers: header,
+    //   // timeout: 60 * 1000, // 30 segundos de timeout
+    // });
+
+    const scraper = new HomecenterScraper();
+
+    // Ver ubicaciones disponibles
+    const ubicaciones = await scraper.obtenerUbicacionesDisponibles();
+    console.log("Ubicaciones disponibles:", ubicaciones);
+
+    // Buscar productos para una ubicación específica
+    // const productosBogota = await scraper.buscarProductos(
+    //   query,
+    //   "Bogotá - Chapinero",
+    // );
+
+    // Comparar con otra ubicación
+    const response = await scraper.buscarProductos(
+      query,
+      "Medellín - El Poblado",
+    );
+
     // 3. Cargar el HTML en cheerio
     const $ = cheerio.load(response.data);
     const productosExtraidos = extraerProductos2($);
