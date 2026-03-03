@@ -42,21 +42,23 @@ function extraerProductos($) {
         console.log("--- Productos extraídos del JSON __NEXT_DATA__ ---");
         const productosExtraidos = results.map((item) => {
           // Extraemos la info más relevante, pero el JSON tiene MUCHO más
+          const price = item.prices?.[0]?.priceWithoutFormatting;
           const producto = {
-            id: item.productId,
-            skuId: item.skuId,
-            nombre: item.displayName,
-            marca: item.brand,
+            createdAt: new Date(),
+            productId: item.productId,
+            // skuId: item.skuId,
+            name: item.displayName,
+            brand: item.brand,
             url: `https://www.homecenter.com.co/homecenter-co/product/${item.productId}/${item.displayName?.replace(/\s+/g, "-")}/${item.productId}/`,
             images: item.mediaUrls || [],
-            precio: item.prices?.[0]?.priceWithoutFormatting || null,
-            moneda: item.prices?.[0]?.symbol || null,
-            precio_texto: item.prices?.[0]?.price || null,
-            unidad: item.prices?.[0]?.unit || null,
+            priceHistory: price ? { date: new Date(), price } : null,
+            // currency: item.prices?.[0]?.symbol || null,
+            // priceText: item.prices?.[0]?.price || null,
+            unit: item.prices?.[0]?.unit || null,
             rating: item.rating,
-            total_resenas: item.totalReviews,
-            destacados: item.highlights || [],
-            eventos: item.events || [],
+            totalReviews: item.totalReviews,
+            // highlights: item.highlights || [],
+            // events: item.events || [],
           };
           return parseProduct(producto);
         });
@@ -140,15 +142,18 @@ function extraerProductos($) {
       }
 
       const pr = {
-        id: productId,
-        nombre: titulo,
-        marca: marca,
+        createdAt: new Date(),
+        productId: productId,
+        name: titulo,
+        brand: marca,
         url: urlProducto,
         images: [imgUrl],
-        precio_texto: precioTexto,
-        precio: precioSinFormato,
+        priceHistory: precioSinFormato
+          ? [{ date: new Date(), price: precioSinFormato }]
+          : null,
+        unit: null,
         rating: rating,
-        // 'total_resenas': , // Es más difícil de obtener limpio desde el HTML
+        totalReviews: null,
       };
       const producto = parseProduct(pr);
       productosExtraidos.push(producto);

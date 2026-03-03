@@ -23,10 +23,11 @@ const searchMaterials = async (req, res) => {
   console.log(`Scrapeando URL: ${url}`);
 
   try {
-    // 2. Hacer la petición HTTP con axios
+    //aplicar timeout para evitar bloqueos
     // @ts-ignore
     const response = await axios.get(url, {
       headers: header,
+      // timeout: 60 * 1000, // 30 segundos de timeout
     });
     // 3. Cargar el HTML en cheerio
     const $ = cheerio.load(response.data);
@@ -47,11 +48,11 @@ const searchMaterials = async (req, res) => {
       });
     }
   } catch (error) {
-    console.error("Error durante el scraping:", error.message);
+    console.error("Error durante el scraping:", error);
     res.status(500).json({
       success: false,
       error: "Error al obtener los datos del sitio web",
-      details: error.message,
+      details: error,
     });
   }
 };
