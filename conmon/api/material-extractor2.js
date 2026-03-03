@@ -10,8 +10,11 @@ function parseProduct(item) {
     images: item.images || [],
     priceHistory: item.priceHistory || null,
     unit: item.unit || null,
-    rating: item.rating || null,
-    reviewCount: item.reviewCount || null,
+    //parcear a double
+    rating: item.rating ? parseFloat(item.rating.toString()) : null,
+    reviewCount: item.reviewCount
+      ? parseInt(item.reviewCount.toString())
+      : null,
   };
 
   return producto;
