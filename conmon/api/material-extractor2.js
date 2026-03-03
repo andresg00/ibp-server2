@@ -52,9 +52,9 @@ function extraerProductos($) {
             brand: item.brand,
             url: `https://www.homecenter.com.co/homecenter-co/product/${item.productId}/${item.displayName?.replace(/\s+/g, "-")}/${item.productId}/`,
             images: item.mediaUrls || [],
-            priceHistory: price ? { date: new Date(), price } : null,
+            priceHistory: price ? { [new Date().toISOString()]: price } : null,
             // currency: item.prices?.[0]?.symbol || null,
-            // priceText: item.prices?.[0]?.price || null,
+            // priceText: item.prices?.[0]?.pice || null,
             unit: item.prices?.[0]?.unit || null,
             rating: item.rating,
             reviewCount: item.totalReviews,
@@ -150,7 +150,7 @@ function extraerProductos($) {
         url: urlProducto,
         images: [imgUrl],
         priceHistory: precioSinFormato
-          ? [{ date: new Date(), price: precioSinFormato }]
+          ? [{ [new Date().toISOString()]: precioSinFormato }]
           : null,
         unit: null,
         rating: rating,
