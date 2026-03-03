@@ -15,6 +15,9 @@ function parseProduct(item) {
     reviewCount: item.reviewCount
       ? parseInt(item.reviewCount.toString())
       : null,
+    highlights: item.highlights || [],
+    // categoryId: item.categoryId || null,
+    category: item.categoryName || null,
   };
 
   return producto;
@@ -41,7 +44,13 @@ function extraerProductos($) {
       // Navegación por el JSON para llegar a los resultados
       const results =
         jsonContent?.props?.pageProps?.searchProps?.searchData?.results;
-
+      // const category = jsonContent.query?.categoryName || null;
+      const cat =
+        jsonContent.props?.pageProps?.categoryProps?.categoryData?.results ||
+        null;
+      const catId = cat?.id || null;
+      const catName = cat?.displayName || null;
+      //0105040101
       if (results && Array.isArray(results)) {
         console.log("--- Productos extraídos del JSON __NEXT_DATA__ ---");
         const productosExtraidos = results.map((item) => {
@@ -61,7 +70,9 @@ function extraerProductos($) {
             unit: item.prices?.[0]?.unit || null,
             rating: item.rating,
             reviewCount: item.totalReviews,
-            // highlights: item.highlights || [],
+            highlights: item.highlights || [],
+            categoryId: catId || null,
+            categoryName: catName || null,
             // events: item.events || [],
           };
           return parseProduct(producto);
