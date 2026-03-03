@@ -56,7 +56,7 @@ function extraerProductos($) {
             // priceText: item.prices?.[0]?.price || null,
             unit: item.prices?.[0]?.unit || null,
             rating: item.rating,
-            totalReviews: item.totalReviews,
+            reviewCount: item.totalReviews,
             // highlights: item.highlights || [],
             // events: item.events || [],
           };
@@ -153,7 +153,7 @@ function extraerProductos($) {
           : null,
         unit: null,
         rating: rating,
-        totalReviews: null,
+        reviewCount: null,
       };
       const producto = parseProduct(pr);
       productosExtraidos.push(producto);
