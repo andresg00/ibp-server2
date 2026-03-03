@@ -2,15 +2,16 @@ const e = require("express");
 
 function parseProduct(item) {
   const producto = {
-    id: item.id || "",
-    nombre: item.nombre || "Sin Nombre",
-    marca: item.marca || "Desconocida",
-    precio: item.precio || 0,
-    unidad: item.unidad || "Und",
-    rating: item.rating ? parseFloat(item.rating) : 0,
-    numero_reviews: item.total_resenas ? parseInt(item.total_resenas) : 0,
-    producto_url: item.url || "",
+    createdAt: item.createdAt || new Date(),
+    productId: item.productId || null,
+    name: item.name || null,
+    brand: item.brand || null,
+    url: item.url || null,
     images: item.images || [],
+    priceHistory: item.priceHistory || null,
+    unit: item.unit || null,
+    rating: item.rating || null,
+    reviewCount: item.reviewCount || null,
   };
 
   return producto;
