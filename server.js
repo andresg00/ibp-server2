@@ -50,8 +50,10 @@ const {
 const { getDocument, getCollection } = require("./conmon/api/get-document"); // Importa la función directamente
 const getAlbumImages =
   require("./conmon/photos/phots-public-album").getAlbumImages; // Importa la función directamente
+const { getWeather } = require("./conmon/api/open_weather_map"); // Importa la función directamente
 
-// Crea la ruta exacta que tu app de Flutter está buscando
+app.post("/api/get-weather", getWeather);
+app.post("/api/get-album-images", getAlbumImages);
 app.post("/api/get-album-images", getAlbumImages);
 app.post("/api/generate-upload-url", generateUploadUrl);
 app.post("/api/delete-file", deleteFile);
