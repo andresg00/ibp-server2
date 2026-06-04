@@ -19,6 +19,7 @@ if (isFirebaseEnv) {
   const { firestore } = require("firebase-admin");
   const { initializeApp, cert, getApps } = require("firebase-admin/app");
   const { getStorage } = require("firebase-admin/storage");
+  const { getMessaging } = require("firebase-admin/messaging");
 
   const storageBucket = process.env.FIREBASE_STORAGE_BUCKET;
   const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_CERT);
@@ -32,5 +33,9 @@ if (isFirebaseEnv) {
 
   db = firestore();
   bucket = getStorage().bucket();
-  module.exports = { db, bucket };
+  const admin = {
+    messaging: () => getMessaging(),
+  };
+  module.exports = { db, bucket, admin };
 }
+
