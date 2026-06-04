@@ -62,7 +62,7 @@ app.post("/api/get-album-images", getAlbumImages);
 app.post("/api/generate-upload-url", generateUploadUrl);
 app.post("/api/delete-file", deleteFile);
 app.post("/api/check-media", checkMedia);
-app.post("/api/get-document", getDocumentExpress);
+app.get("/api/get-document", getDocumentExpress);
 app.get("/api/get-list", getListExpress);
 app.post("/api/set-document", setDocumentExpress);
 app.post("/api/set-list", setListExpress);

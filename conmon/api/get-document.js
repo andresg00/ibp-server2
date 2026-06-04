@@ -1,14 +1,11 @@
-const { db, admin } = require("../config/firebase");
+const { db } = require("../config/firebase");
 
 // --- Configuración de Firebase Admin ---
 let validAccessKeys = [];
 try {
   validAccessKeys = JSON.parse(process.env.FIREBASE_ACCESS_KEYS || "[]");
 } catch (e) {
-  console.warn(
-    "Advertencia: No se pudo parsear FIREBASE_ACCESS_KEYS:",
-    e.message,
-  );
+  console.warn("Advertencia: No se pudo parsear FIREBASE_ACCESS_KEYS:", e.message);
 }
 if (!validAccessKeys.includes(undefined)) {
   validAccessKeys.push(undefined);
@@ -68,50 +65,8 @@ async function setDocument(path, data, accessKey) {
   }
 
   const docRef = db.doc(path);
-  if (path.startsWith("contact-MS-v2")) {
-    await pusNotification(data);
-  }
   await docRef.set(data, { merge: true });
   return { id: docRef.id };
-}
-async function pusNotification(data) {
-  try {
-    // Tu servidor va directo al grano:
-    const deviceDoc = await db.collection("devices").doc("admin_device").get();
-    const fcmToken = deviceDoc.data()?.fcmToken;
-
-    if (!fcmToken) {
-      console.log("No hay un token FCM registrado para este dispositivo.");
-      return;
-    }
-
-    // 3. Construir la notificación usando las propiedades de tu objeto 'data'
-    const payload = {
-      token: fcmToken,
-      notification: {
-        title: `Nuevo: ${data.service}`, // Ejemplo: "Nuevo: reparaciones"
-        body: `${data.name} dice: ${data.message.substring(0, 60)}...`, // Muestra un fragmento del mensaje
-      },
-      // Datos extra en segundo plano para que Flutter los use si necesitas abrir una pantalla específica
-      data: {
-        click_action: "FLUTTER_NOTIFICATION_CLICK",
-        client_name: data.name,
-        client_phone: data.phone,
-        client_email: data.email,
-        service_type: data.service,
-        type: "lead_contact",
-      },
-    };
-
-    // 4. Enviar el disparo a FCM
-    const response = await admin.messaging().send(payload);
-    console.log(
-      "Notificación enviada con éxito a WorkDiary. ID del mensaje:",
-      response,
-    );
-  } catch (error) {
-    console.error("Error al procesar la notificación push:", error);
-  }
 }
 
 /**
@@ -149,11 +104,14 @@ async function setList(path, list, accessKey) {
 // --- Controladores para Servidor Express (Compatibilidad Monolito) ---
 
 const getDocumentExpress = async (req, res) => {
-  // Soporta tanto query (GET) como body (POST)
-  const path = req.query?.path || req.body?.path;
-  const accessKey = req.query?.accessKey || req.body?.accessKey;
-  const normalizedKey =
-    accessKey === "undefined" || accessKey === "" ? undefined : accessKey;
+  if (req.method !== "GET") {
+    res.setHeader("Allow", ["GET"]);
+    return res.status(405).json({ error: "Método no permitido. Usa GET." });
+  }
+
+  const path = req.query?.path;
+  const accessKey = req.headers['authorization'] || req.headers['x-access-key'] || req.query?.accessKey;
+  const normalizedKey = (accessKey === "undefined" || accessKey === "") ? undefined : accessKey;
 
   try {
     const document = await fetchDocument(path, normalizedKey);
@@ -174,10 +132,14 @@ const getDocumentExpress = async (req, res) => {
 };
 
 const getListExpress = async (req, res) => {
-  const path = req.query?.path || req.body?.path;
-  const accessKey = req.query?.accessKey || req.body?.accessKey;
-  const normalizedKey =
-    accessKey === "undefined" || accessKey === "" ? undefined : accessKey;
+  if (req.method !== "GET") {
+    res.setHeader("Allow", ["GET"]);
+    return res.status(405).json({ error: "Método no permitido. Usa GET." });
+  }
+
+  const path = req.query?.path;
+  const accessKey = req.headers['authorization'] || req.headers['x-access-key'] || req.query?.accessKey;
+  const normalizedKey = (accessKey === "undefined" || accessKey === "") ? undefined : accessKey;
 
   try {
     const documents = await fetchCollection(path, normalizedKey);
@@ -249,4 +211,6 @@ module.exports = {
   getListExpress,
   setDocumentExpress,
   setListExpress,
+  getDocument: getDocumentExpress,        // Compatibilidad legacy
+  getCollection: getListExpress,          // Compatibilidad legacy
 };

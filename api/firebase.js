@@ -19,7 +19,11 @@ module.exports = async function handler(req, res) {
           return res.status(405).json({ error: "Método no permitido. Usa GET para get-document." });
         }
         const { path, accessKey } = req.query;
-        const normalizedKey = (accessKey === "undefined" || accessKey === "") ? undefined : accessKey;
+        // Soporte opcional para enviar la clave en cabeceras HTTP (más seguro)
+        const headerKey = req.headers['authorization'] || req.headers['x-access-key'];
+        const finalKey = headerKey || accessKey;
+        const normalizedKey = (finalKey === "undefined" || finalKey === "") ? undefined : finalKey;
+
         const document = await fetchDocument(path, normalizedKey);
         res.setHeader("Cache-Control", "public, max-age=10, s-maxage=60, stale-while-revalidate=600");
         return res.status(200).json({ document });
@@ -32,7 +36,10 @@ module.exports = async function handler(req, res) {
           return res.status(405).json({ error: "Método no permitido. Usa GET para get-list." });
         }
         const { path, accessKey } = req.query;
-        const normalizedKey = (accessKey === "undefined" || accessKey === "") ? undefined : accessKey;
+        const headerKey = req.headers['authorization'] || req.headers['x-access-key'];
+        const finalKey = headerKey || accessKey;
+        const normalizedKey = (finalKey === "undefined" || finalKey === "") ? undefined : finalKey;
+
         const documents = await fetchCollection(path, normalizedKey);
         res.setHeader("Cache-Control", "public, max-age=10, s-maxage=60, stale-while-revalidate=600");
         return res.status(200).json({ documents });
