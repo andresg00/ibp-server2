@@ -15,71 +15,71 @@
   "rewrites": [
     {
       "source": "/api/document",
-      "destination": "/api/firebase.js?route=get-document"
+      "destination": "/api/firebase?route=get-document"
     },
     {
       "source": "/api/collection",
-      "destination": "/api/firebase.js?route=get-list"
+      "destination": "/api/firebase?route=get-list"
     },
     {
       "source": "/api/get-document",
-      "destination": "/api/firebase.js?route=get-document"
+      "destination": "/api/firebase?route=get-document"
     },
     {
       "source": "/api/get-list",
-      "destination": "/api/firebase.js?route=get-list"
+      "destination": "/api/firebase?route=get-list"
     },
     {
       "source": "/api/set-document",
-      "destination": "/api/firebase.js?route=set-document"
+      "destination": "/api/firebase?route=set-document"
     },
     {
       "source": "/api/set-list",
-      "destination": "/api/firebase.js?route=set-list"
+      "destination": "/api/firebase?route=set-list"
     },
     {
       "source": "/api/generate-upload-url",
-      "destination": "/api/storage.js?route=generate-upload-url"
+      "destination": "/api/storage?route=generate-upload-url"
     },
     {
       "source": "/api/delete-file",
-      "destination": "/api/storage.js?route=delete-file"
+      "destination": "/api/storage?route=delete-file"
     },
     {
       "source": "/api/check-media",
-      "destination": "/api/storage.js?route=check-media"
+      "destination": "/api/storage?route=check-media"
     },
     {
       "source": "/api/get-album-images",
-      "destination": "/api/storage.js?route=get-album-images"
+      "destination": "/api/storage?route=get-album-images"
     },
     {
       "source": "/api/search-materials",
-      "destination": "/api/materials.js?route=search-materials"
+      "destination": "/api/materials?route=search-materials"
     },
     {
       "source": "/api/update-material",
-      "destination": "/api/materials.js?route=update-material"
+      "destination": "/api/materials?route=update-material"
     },
     {
       "source": "/api/get-weather",
-      "destination": "/api/weather.js"
+      "destination": "/api/weather"
     },
     {
       "source": "/api/ai-description",
-      "destination": "/api/ai.js?route=description"
+      "destination": "/api/ai?route=description"
     },
     {
       "source": "/api/ai-execute",
-      "destination": "/api/ai.js?route=execute"
+      "destination": "/api/ai?route=execute"
     },
     {
       "source": "/api/ai-reformulate",
-      "destination": "/api/ai.js?route=reformulate"
+      "destination": "/api/ai?route=reformulate"
     },
     {
       "source": "/",
-      "destination": "/api/index.js"
+      "destination": "/api/index"
     }
   ]
 }
