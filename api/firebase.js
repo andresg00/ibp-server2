@@ -19,8 +19,8 @@ module.exports = async function handler(req, res) {
           return res.status(405).json({ error: "Método no permitido. Usa GET para get-document." });
         }
         const { path, accessKey } = req.query;
-        // Soporte opcional para enviar la clave en cabeceras HTTP (más seguro)
-        const headerKey = req.headers['authorization'] || req.headers['x-access-key'];
+        // Soporte opcional para enviar la clave en cabeceras HTTP (autorización estándar, x-access-key o accesskey literal)
+        const headerKey = req.headers['authorization'] || req.headers['x-access-key'] || req.headers['accesskey'];
         const finalKey = headerKey || accessKey;
         const normalizedKey = (finalKey === "undefined" || finalKey === "") ? undefined : finalKey;
 
@@ -35,12 +35,13 @@ module.exports = async function handler(req, res) {
           res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
           return res.status(405).json({ error: "Método no permitido. Usa GET para get-list." });
         }
-        const { path, accessKey } = req.query;
-        const headerKey = req.headers['authorization'] || req.headers['x-access-key'];
+        const { path, accessKey, filter, order } = req.query;
+        const headerKey = req.headers['authorization'] || req.headers['x-access-key'] || req.headers['accesskey'];
         const finalKey = headerKey || accessKey;
         const normalizedKey = (finalKey === "undefined" || finalKey === "") ? undefined : finalKey;
 
-        const documents = await fetchCollection(path, normalizedKey);
+        // Pasamos filter y order para aplicar ordenamientos y búsquedas dinámicas en Firestore
+        const documents = await fetchCollection(path, normalizedKey, filter, order);
         res.setHeader("Cache-Control", "public, max-age=10, s-maxage=60, stale-while-revalidate=600");
         return res.status(200).json({ documents });
       }

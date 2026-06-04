@@ -31,9 +31,9 @@ async function fetchDocument(path, accessKey) {
 }
 
 /**
- * Lógica pura para obtener una colección/lista de Firestore.
+ * Lógica pura para obtener una colección/lista de Firestore con filtros y ordenamientos dinámicos.
  */
-async function fetchCollection(path, accessKey) {
+async function fetchCollection(path, accessKey, filter, order) {
   if (!validAccessKeys.includes(accessKey)) {
     throw new Error("UNAUTHORIZED");
   }
@@ -41,8 +41,45 @@ async function fetchCollection(path, accessKey) {
     throw new Error("MISSING_PATH");
   }
 
-  const collectionRef = db.collection(path);
-  const snapshot = await collectionRef.get();
+  let queryRef = db.collection(path);
+
+  // Aplicar filtros dinámicos (enviados como JSON stringificado desde Angular/Vite)
+  if (filter) {
+    let parsedFilter;
+    try {
+      parsedFilter = typeof filter === "string" ? JSON.parse(filter) : filter;
+    } catch (e) {
+      console.warn("Fallo al parsear filter JSON:", e.message);
+    }
+
+    if (Array.isArray(parsedFilter)) {
+      parsedFilter.forEach((f) => {
+        if (f.field && f.operator && f.value !== undefined) {
+          queryRef = queryRef.where(f.field, f.operator, f.value);
+        }
+      });
+    }
+  }
+
+  // Aplicar orden dinámico
+  if (order) {
+    let parsedOrder;
+    try {
+      parsedOrder = typeof order === "string" ? JSON.parse(order) : order;
+    } catch (e) {
+      console.warn("Fallo al parsear order JSON:", e.message);
+    }
+
+    if (parsedOrder) {
+      if (typeof parsedOrder === "string") {
+        queryRef = queryRef.orderBy(parsedOrder);
+      } else if (parsedOrder.field) {
+        queryRef = queryRef.orderBy(parsedOrder.field, parsedOrder.direction || "asc");
+      }
+    }
+  }
+
+  const snapshot = await queryRef.get();
   const documents = [];
   snapshot.forEach((doc) => {
     documents.push({ id: doc.id, ...doc.data() });
@@ -110,7 +147,7 @@ const getDocumentExpress = async (req, res) => {
   }
 
   const path = req.query?.path;
-  const accessKey = req.headers['authorization'] || req.headers['x-access-key'] || req.query?.accessKey;
+  const accessKey = req.headers['authorization'] || req.headers['x-access-key'] || req.headers['accesskey'] || req.query?.accessKey;
   const normalizedKey = (accessKey === "undefined" || accessKey === "") ? undefined : accessKey;
 
   try {
@@ -137,12 +174,13 @@ const getListExpress = async (req, res) => {
     return res.status(405).json({ error: "Método no permitido. Usa GET." });
   }
 
-  const path = req.query?.path;
-  const accessKey = req.headers['authorization'] || req.headers['x-access-key'] || req.query?.accessKey;
-  const normalizedKey = (accessKey === "undefined" || accessKey === "") ? undefined : accessKey;
+  const { path, accessKey, filter, order } = req.query;
+  const headerKey = req.headers['authorization'] || req.headers['x-access-key'] || req.headers['accesskey'];
+  const finalKey = headerKey || accessKey;
+  const normalizedKey = (finalKey === "undefined" || finalKey === "") ? undefined : finalKey;
 
   try {
-    const documents = await fetchCollection(path, normalizedKey);
+    const documents = await fetchCollection(path, normalizedKey, filter, order);
     return res.status(200).json({ documents });
   } catch (error) {
     if (error.message === "UNAUTHORIZED") {
