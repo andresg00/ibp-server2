@@ -1,4 +1,4 @@
-const { db } = require("../config/firebase");
+const { db, admin } = require("../config/firebase");
 
 // --- Configuración de Firebase Admin ---
 let validAccessKeys = [];
