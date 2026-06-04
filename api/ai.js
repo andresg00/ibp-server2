@@ -1,6 +1,13 @@
 const { getDescription, execute, reformulate } = require("../conmon/api/ai-rest-api");
 
 module.exports = async function handler(req, res) {
+  // Manejo inmediato del preflight CORS (peticiones OPTIONS)
+  if (req.method === "OPTIONS") {
+    res.setHeader("Allow", ["GET", "POST", "OPTIONS"]);
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    return res.status(200).end();
+  }
+
   if (req.method !== "POST") {
     res.setHeader("Allow", ["POST"]);
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");

@@ -4,6 +4,13 @@ const { db } = require("../conmon/config/firebase");
 const { getAlbum } = require("../conmon/photos/phots-public-album");
 
 module.exports = async function handler(req, res) {
+  // Manejo inmediato del preflight CORS (peticiones OPTIONS)
+  if (req.method === "OPTIONS") {
+    res.setHeader("Allow", ["GET", "POST", "OPTIONS"]);
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    return res.status(200).end();
+  }
+
   const route = req.query.route;
 
   try {
