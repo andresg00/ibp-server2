@@ -3,7 +3,7 @@
   "cleanUrls": true,
   "headers": [
     {
-      "source": "/api/(.*)",
+      "source": "/api/:path*",
       "headers": [
         { "key": "Access-Control-Allow-Credentials", "value": "true" },
         { "key": "Access-Control-Allow-Origin", "value": "*" },
@@ -12,74 +12,74 @@
       ]
     }
   ],
-  "routes": [
+  "rewrites": [
     {
-      "src": "/api/document",
-      "dest": "/api/firebase.js?route=get-document"
+      "source": "/api/document",
+      "destination": "/api/firebase.js?route=get-document"
     },
     {
-      "src": "/api/collection",
-      "dest": "/api/firebase.js?route=get-list"
+      "source": "/api/collection",
+      "destination": "/api/firebase.js?route=get-list"
     },
     {
-      "src": "/api/get-document",
-      "dest": "/api/firebase.js?route=get-document"
+      "source": "/api/get-document",
+      "destination": "/api/firebase.js?route=get-document"
     },
     {
-      "src": "/api/get-list",
-      "dest": "/api/firebase.js?route=get-list"
+      "source": "/api/get-list",
+      "destination": "/api/firebase.js?route=get-list"
     },
     {
-      "src": "/api/set-document",
-      "dest": "/api/firebase.js?route=set-document"
+      "source": "/api/set-document",
+      "destination": "/api/firebase.js?route=set-document"
     },
     {
-      "src": "/api/set-list",
-      "dest": "/api/firebase.js?route=set-list"
+      "source": "/api/set-list",
+      "destination": "/api/firebase.js?route=set-list"
     },
     {
-      "src": "/api/generate-upload-url",
-      "dest": "/api/storage.js?route=generate-upload-url"
+      "source": "/api/generate-upload-url",
+      "destination": "/api/storage.js?route=generate-upload-url"
     },
     {
-      "src": "/api/delete-file",
-      "dest": "/api/storage.js?route=delete-file"
+      "source": "/api/delete-file",
+      "destination": "/api/storage.js?route=delete-file"
     },
     {
-      "src": "/api/check-media",
-      "dest": "/api/storage.js?route=check-media"
+      "source": "/api/check-media",
+      "destination": "/api/storage.js?route=check-media"
     },
     {
-      "src": "/api/get-album-images",
-      "dest": "/api/storage.js?route=get-album-images"
+      "source": "/api/get-album-images",
+      "destination": "/api/storage.js?route=get-album-images"
     },
     {
-      "src": "/api/search-materials",
-      "dest": "/api/materials.js?route=search-materials"
+      "source": "/api/search-materials",
+      "destination": "/api/materials.js?route=search-materials"
     },
     {
-      "src": "/api/update-material",
-      "dest": "/api/materials.js?route=update-material"
+      "source": "/api/update-material",
+      "destination": "/api/materials.js?route=update-material"
     },
     {
-      "src": "/api/get-weather",
-      "dest": "/api/weather.js"
+      "source": "/api/get-weather",
+      "destination": "/api/weather.js"
     },
     {
-      "src": "/api/ai-description",
-      "dest": "/api/ai.js?route=description"
+      "source": "/api/ai-description",
+      "destination": "/api/ai.js?route=description"
     },
     {
-      "src": "/api/ai-execute",
-      "dest": "/api/ai.js?route=execute"
+      "source": "/api/ai-execute",
+      "destination": "/api/ai.js?route=execute"
     },
     {
-      "src": "/api/ai-reformulate",
-      "dest": "/api/ai.js?route=reformulate"
+      "source": "/api/ai-reformulate",
+      "destination": "/api/ai.js?route=reformulate"
     },
     {
-      "src": "/(.*)",
-      "dest": "/api/index.js"
+      "source": "/",
+      "destination": "/api/index.js"
     }
   ]
 }
