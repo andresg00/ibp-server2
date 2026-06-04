@@ -47,19 +47,25 @@ const {
   execute,
   reformulate,
 } = require("./conmon/api/ai-rest-api");
-const { getDocument, getCollection } = require("./conmon/api/get-document"); // Importa la función directamente
+const {
+  getDocumentExpress,
+  getListExpress,
+  setDocumentExpress,
+  setListExpress,
+} = require("./conmon/api/get-document"); // Importa la función directamente
 const getAlbumImages =
   require("./conmon/photos/phots-public-album").getAlbumImages; // Importa la función directamente
 const { getWeather } = require("./conmon/api/open_weather_map"); // Importa la función directamente
 
 app.post("/api/get-weather", getWeather);
 app.post("/api/get-album-images", getAlbumImages);
-app.post("/api/get-album-images", getAlbumImages);
 app.post("/api/generate-upload-url", generateUploadUrl);
 app.post("/api/delete-file", deleteFile);
 app.post("/api/check-media", checkMedia);
-app.post("/api/document", getDocument);
-app.post("/api/collection", getCollection);
+app.post("/api/get-document", getDocumentExpress);
+app.get("/api/get-list", getListExpress);
+app.post("/api/set-document", setDocumentExpress);
+app.post("/api/set-list", setListExpress);
 app.post("/api/ai-description", getDescription);
 app.post("/api/ai-execute", execute);
 app.post("/api/ai-reformulate", reformulate);

@@ -6,7 +6,7 @@ const API_KEY = process.env.OPENWEATHERMAP_KEY;
  * @returns {Promise<Object>} Datos del clima
  */
 async function obtenerClima(city) {
-  const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&lang=es&units=metric`;
+  const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${API_KEY}&lang=es&units=metric`;
 
   try {
     const response = await fetch(url);
@@ -60,12 +60,17 @@ function climaJson(data) {
     vientoVelocidad: data.wind.speed,
   };
 }
+
 const getWeather = async (req, res) => {
-  // Solo permitimos peticiones POST
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Método no permitido. Usa POST." });
+  if (req.method !== "POST" && req.method !== "GET") {
+    return res.status(405).json({ error: "Método no permitido. Usa GET o POST." });
   }
-  const { city, lat, lon } = req.body;
+
+  // Soporta tanto body (POST viejo) como query (GET nuevo)
+  const city = req.body?.city || req.query?.city;
+  const lat = req.body?.lat || req.query?.lat;
+  const lon = req.body?.lon || req.query?.lon;
+
   try {
     let weatherData;
     if (city) {
@@ -83,4 +88,8 @@ const getWeather = async (req, res) => {
   }
 };
 
-module.exports = { getWeather };
+module.exports = {
+  getWeather,
+  obtenerClima,
+  obtenerClimaPorUbicacion,
+};

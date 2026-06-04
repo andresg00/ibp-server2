@@ -1,15 +1,85 @@
 {
   "version": 2,
-  "builds": [
+  "cleanUrls": true,
+  "headers": [
     {
-      "src": "server.js",
-      "use": "@vercel/node"
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Credentials", "value": "true" },
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET,OPTIONS,PATCH,DELETE,POST,PUT" },
+        { "key": "Access-Control-Allow-Headers", "value": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization" }
+      ]
     }
   ],
   "routes": [
     {
+      "src": "/api/document",
+      "dest": "/api/firebase.js?route=get-document"
+    },
+    {
+      "src": "/api/collection",
+      "dest": "/api/firebase.js?route=get-list"
+    },
+    {
+      "src": "/api/get-document",
+      "dest": "/api/firebase.js?route=get-document"
+    },
+    {
+      "src": "/api/get-list",
+      "dest": "/api/firebase.js?route=get-list"
+    },
+    {
+      "src": "/api/set-document",
+      "dest": "/api/firebase.js?route=set-document"
+    },
+    {
+      "src": "/api/set-list",
+      "dest": "/api/firebase.js?route=set-list"
+    },
+    {
+      "src": "/api/generate-upload-url",
+      "dest": "/api/storage.js?route=generate-upload-url"
+    },
+    {
+      "src": "/api/delete-file",
+      "dest": "/api/storage.js?route=delete-file"
+    },
+    {
+      "src": "/api/check-media",
+      "dest": "/api/storage.js?route=check-media"
+    },
+    {
+      "src": "/api/get-album-images",
+      "dest": "/api/storage.js?route=get-album-images"
+    },
+    {
+      "src": "/api/search-materials",
+      "dest": "/api/materials.js?route=search-materials"
+    },
+    {
+      "src": "/api/update-material",
+      "dest": "/api/materials.js?route=update-material"
+    },
+    {
+      "src": "/api/get-weather",
+      "dest": "/api/weather.js"
+    },
+    {
+      "src": "/api/ai-description",
+      "dest": "/api/ai.js?route=description"
+    },
+    {
+      "src": "/api/ai-execute",
+      "dest": "/api/ai.js?route=execute"
+    },
+    {
+      "src": "/api/ai-reformulate",
+      "dest": "/api/ai.js?route=reformulate"
+    },
+    {
       "src": "/(.*)",
-      "dest": "server.js"
+      "dest": "/api/index.js"
     }
   ]
 }

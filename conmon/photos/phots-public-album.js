@@ -1,5 +1,4 @@
 function getJsonJs(html) {
-  // const html = fs.readFileSync("archivo.html", "utf8");
   const scriptMatches = html.match(/<script[^>]*>([\s\S]*?)<\/script>/g);
 
   let jsonData = null;
@@ -17,21 +16,7 @@ function getJsonJs(html) {
 
   return jsonData;
 }
-// const cheerio = require("cheerio");
-// function getJsonCheerio(html) {
-//   const $ = cheerio.load(html);
-//   let jsonData = null;
-//   $("script").each((_, script) => {
-//     const scriptContent = $(script).html();
-//     if (scriptContent.includes("AF_initDataCallback")) {
-//       const match = scriptContent.match(/\{key:.*\}/);
-//       if (match) {
-//         jsonData = match[0];
-//       }
-//     }
-//   });
-//   return jsonData;
-// }
+
 const extractData = (fn, defaultValue = null) => {
   try {
     return fn();
@@ -80,6 +65,7 @@ const prossesAlbumData = (data) => {
     images,
   };
 };
+
 function getId(url) {
   return url.replace(/\/$/, "").split("/").pop();
 }
@@ -88,21 +74,14 @@ const axios = require("axios");
 async function getAlbum(url) {
   try {
     const id = getId(url);
-    // const response = await fetch(`https://photos.app.goo.gl/${id}`);
-    // const html = response.body ? await response.text() : null;
-    //Utilizar axios para obtener el HTML del álbum, es preferible a fetch en este caso por su manejo de errores y compatibilidad
-    //y coverciond e datos automática
-    // @ts-ignore
     const response = await axios.get(`https://photos.app.goo.gl/${id}`);
     const html = response.data;
 
-    // Buscar el script con "AF_initDataCallback"
-    // let jsonData = getJsonCheerio(html);
     let jsonData = getJsonJs(html);
 
     if (!jsonData) {
       console.log("No se encontraron datos.");
-      return;
+      return null;
     }
     // 1. Reemplazar comillas simples por dobles
     jsonData = jsonData.replace(/'/g, '"');
@@ -112,18 +91,15 @@ async function getAlbum(url) {
     // Limpiar y convertir a JSON válido
     const parsedData = JSON.parse(jsonData);
 
-    if (!parsedData.data || !Array.isArray(parsedData.data)) return [];
-    // const json = JSON.parse(jsonData);
-
-    // console.log("Datos extraídos:", parsedData.data);
+    if (!parsedData.data || !Array.isArray(parsedData.data)) return null;
 
     // Extraer imágenes
     const images = prossesAlbumData(parsedData);
     images["url"] = url;
-    // console.log("Imágenes encontradas:", images);
     return images;
   } catch (error) {
     console.error("Error obteniendo los datos:", error);
+    return null;
   }
 }
 
@@ -134,7 +110,7 @@ const getAlbumImages = async (req, res) => {
 
     const albumData = await getAlbum(url);
     if (albumData) {
-      return albumData;
+      return res.status(200).json(albumData); // Corregido: Retornar respuesta HTTP en vez de solo devolver los datos
     } else {
       return res.status(404).json({
         error: "No se encontraron datos para el álbum proporcionado.",
@@ -142,7 +118,11 @@ const getAlbumImages = async (req, res) => {
     }
   } catch (error) {
     console.error("Error en getAlbumImages:", error.message);
+    return res.status(500).json({ error: error.message });
   }
 };
-module.exports = { getAlbumImages };
-// getAlbum("https://photos.app.goo.gl/rH9oPnGinhwcH9QHA");
+
+module.exports = {
+  getAlbum,
+  getAlbumImages
+};

@@ -5,3 +5,5 @@ dist/
 firebase-admin.json
 .DS_Store
 .vscode/
+.vercel
+.env*
