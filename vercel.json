@@ -30,6 +30,18 @@
       "destination": "/api/firebase?route=get-list"
     },
     {
+      "source": "/api/get-my-projects",
+      "destination": "/api/firebase?route=get-my-projects"
+    },
+    {
+      "source": "/api/verify-project-ownership",
+      "destination": "/api/firebase?route=verify-project-ownership"
+    },
+    {
+      "source": "/api/claim-project",
+      "destination": "/api/firebase?route=claim-project"
+    },
+    {
       "source": "/api/set-document",
       "destination": "/api/firebase?route=set-document"
     },

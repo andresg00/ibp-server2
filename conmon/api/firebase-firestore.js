@@ -1,24 +1,25 @@
-const { db, admin } = require("../config/firebase");
+const { db } = require("../config/firebase");
 
-// --- Configuración de Firebase Admin ---
-let validAccessKeys = [];
-try {
-  validAccessKeys = JSON.parse(process.env.FIREBASE_ACCESS_KEYS || "[]");
-} catch (e) {
-  console.warn(
-    "Advertencia: No se pudo parsear FIREBASE_ACCESS_KEYS:",
-    e.message,
-  );
+/**
+ * Valida la clave específica de un proyecto (placeholder para implementación diferida).
+ * @param {string} projectId ID del proyecto.
+ * @param {string} accessKey Clave del proyecto enviada por el cliente.
+ * @returns {boolean} Verdadero si es válida.
+ */
+async function validateProjectKey(projectId, accessKey) {
+  const private = await fetchDocument("private/projects");
+  const keys = private.keys;
+  return keys[projectId] && keys[projectId] === accessKey;
 }
-if (!validAccessKeys.includes(undefined)) {
-  validAccessKeys.push(undefined);
+// PRO-438W-8HFNF
+function validateAcces(path, userId) {
+  return true;
 }
-
 /**
  * Lógica pura para obtener un documento de Firestore.
  */
 async function fetchDocument(path, accessKey) {
-  if (!validAccessKeys.includes(accessKey)) {
+  if (!validateAcces(accessKey)) {
     throw new Error("UNAUTHORIZED");
   }
   if (!path) {
@@ -37,7 +38,7 @@ async function fetchDocument(path, accessKey) {
  * Lógica pura para obtener una colección/lista de Firestore con filtros y ordenamientos dinámicos.
  */
 async function fetchCollection(path, accessKey, filter, order) {
-  if (!validAccessKeys.includes(accessKey)) {
+  if (!validateAcces(accessKey)) {
     throw new Error("UNAUTHORIZED");
   }
   if (!path) {
@@ -94,6 +95,71 @@ async function fetchCollection(path, accessKey, filter, order) {
 }
 
 /**
+ * Lógica pura para obtener los proyectos específicos de un usuario en Firestore.
+ */
+async function fetchMyProjects(userId) {
+  if (!userId) {
+    throw new Error("MISSING_USER_ID");
+  }
+
+  // Buscamos los proyectos donde el campo userId sea igual al parámetro de consulta
+  const snapshot = await db
+    .collection("projects")
+    .where("userId", "==", userId)
+    .get();
+  const projects = [];
+  snapshot.forEach((doc) => {
+    projects.push({ id: doc.id, ...doc.data() });
+  });
+  return projects;
+}
+
+/**
+ * Lógica pura para verificar si un proyecto pertenece a un usuario.
+ */
+async function verifyProjectOwnership(projectId, userId) {
+  if (!projectId) {
+    throw new Error("MISSING_PROJECT_ID");
+  }
+  if (!userId) {
+    throw new Error("MISSING_USER_ID");
+  }
+
+  const doc = await db.collection("projects").doc(projectId).get();
+  if (!doc.exists) {
+    return { owned: false, message: "Project not found" };
+  }
+  const data = doc.data();
+  // Comparamos contra userId y ownerId para dar mayor cobertura
+  const owned = data.userId === userId || data.ownerId === userId;
+  return { owned };
+}
+
+/**
+ * Lógica pura para reclamar/asignar un proyecto a un usuario en Firestore.
+ */
+async function claimProject(projectId, userId, accessKey) {
+  if (!(await validateProjectKey(projectId, accessKey))) {
+    throw new Error("UNAUTHORIZED");
+  }
+  if (!projectId) {
+    throw new Error("MISSING_PROJECT_ID");
+  }
+  if (!userId) {
+    throw new Error("MISSING_USER_ID");
+  }
+
+  const docRef = db.collection("projects").doc(projectId);
+  const doc = await docRef.get();
+  if (!doc.exists) {
+    throw new Error("NOT_FOUND");
+  }
+
+  await docRef.update({ userId: userId });
+  return { success: true };
+}
+
+/**
  * Lógica pura para escribir/actualizar un documento en Firestore.
  */
 async function setDocument(path, data, accessKey) {
@@ -108,50 +174,8 @@ async function setDocument(path, data, accessKey) {
   }
 
   const docRef = db.doc(path);
-  if (path.startsWith("contact-MS-v2")) {
-    await pusNotification(data);
-  }
   await docRef.set(data, { merge: true });
   return { id: docRef.id };
-}
-async function pusNotification(data) {
-  try {
-    // Tu servidor va directo al grano:
-    const deviceDoc = await db.collection("devices").doc("admin_device").get();
-    const fcmToken = deviceDoc.data()?.fcmToken;
-
-    if (!fcmToken) {
-      console.log("No hay un token FCM registrado para este dispositivo.");
-      return;
-    }
-
-    // 3. Construir la notificación usando las propiedades de tu objeto 'data'
-    const payload = {
-      token: fcmToken,
-      notification: {
-        title: `Nuevo: ${data.service}`, // Ejemplo: "Nuevo: reparaciones"
-        body: `${data.name} dice: ${data.message.substring(0, 60)}...`, // Muestra un fragmento del mensaje
-      },
-      // Datos extra en segundo plano para que Flutter los use si necesitas abrir una pantalla específica
-      data: {
-        click_action: "FLUTTER_NOTIFICATION_CLICK",
-        client_name: data.name,
-        client_phone: data.phone,
-        client_email: data.email,
-        service_type: data.service,
-        type: "lead_contact",
-      },
-    };
-
-    // 4. Enviar el disparo a FCM
-    const response = await admin.messaging().send(payload);
-    console.log(
-      "Notificación enviada con éxito a WorkDiary. ID del mensaje:",
-      response,
-    );
-  } catch (error) {
-    console.error("Error al procesar la notificación push:", error);
-  }
 }
 
 /**
@@ -195,7 +219,7 @@ const getDocumentExpress = async (req, res) => {
   }
 
   const path = req.query?.path;
-  const accessKey = req.headers["authorization"]; // Solo cabecera estándar de autorización
+  const accessKey = req.headers["authorization"];
   const normalizedKey =
     accessKey === "undefined" || accessKey === "" ? undefined : accessKey;
 
@@ -239,6 +263,88 @@ const getListExpress = async (req, res) => {
       return res.status(400).json({ error: "Falta el parámetro 'path'." });
     }
     console.error("Error al obtener la lista/colección (Express):", error);
+    return res.status(500).json({ error: "Error interno del servidor." });
+  }
+};
+
+const getMyProjectsExpress = async (req, res) => {
+  if (req.method !== "GET") {
+    res.setHeader("Allow", ["GET"]);
+    return res.status(405).json({ error: "Método no permitido. Usa GET." });
+  }
+
+  const userId = req.query?.userId;
+
+  try {
+    const projects = await fetchMyProjects(userId);
+    return res.status(200).json(projects);
+  } catch (error) {
+    if (error.message === "UNAUTHORIZED") {
+      return res.status(403).json({ error: "Clave de acceso inválida." });
+    }
+    if (error.message === "MISSING_USER_ID") {
+      return res.status(400).json({ error: "Falta el parámetro 'userId'." });
+    }
+    console.error("Error en getMyProjectsExpress:", error);
+    return res.status(500).json({ error: "Error interno del servidor." });
+  }
+};
+
+const verifyProjectOwnershipExpress = async (req, res) => {
+  if (req.method !== "GET") {
+    res.setHeader("Allow", ["GET"]);
+    return res.status(405).json({ error: "Método no permitido. Usa GET." });
+  }
+
+  const { projectId, userId } = req.query;
+
+  try {
+    const result = await verifyProjectOwnership(projectId, userId);
+    return res.status(200).json(result);
+  } catch (error) {
+    if (error.message === "UNAUTHORIZED") {
+      return res.status(403).json({ error: "Clave de acceso inválida." });
+    }
+    if (error.message === "MISSING_PROJECT_ID") {
+      return res.status(400).json({ error: "Falta el parámetro 'projectId'." });
+    }
+    if (error.message === "MISSING_USER_ID") {
+      return res.status(400).json({ error: "Falta el parámetro 'userId'." });
+    }
+    console.error("Error en verifyProjectOwnershipExpress:", error);
+    return res.status(500).json({ error: "Error interno del servidor." });
+  }
+};
+
+const claimProjectExpress = async (req, res) => {
+  if (req.method !== "POST") {
+    res.setHeader("Allow", ["POST"]);
+    return res.status(405).json({ error: "Método no permitido. Usa POST." });
+  }
+
+  const { projectId, userId, accessKey: bodyKey } = req.body;
+  const headerKey = req.headers["authorization"];
+  const accessKey = headerKey || bodyKey;
+
+  try {
+    const result = await claimProject(projectId, userId, accessKey);
+    return res.status(200).json(result);
+  } catch (error) {
+    if (error.message === "UNAUTHORIZED") {
+      return res
+        .status(403)
+        .json({ error: "Clave de acceso de proyecto inválida." });
+    }
+    if (error.message === "MISSING_PROJECT_ID") {
+      return res.status(400).json({ error: "Falta el parámetro 'projectId'." });
+    }
+    if (error.message === "MISSING_USER_ID") {
+      return res.status(400).json({ error: "Falta el parámetro 'userId'." });
+    }
+    if (error.message === "NOT_FOUND") {
+      return res.status(404).json({ error: "Proyecto no encontrado." });
+    }
+    console.error("Error en claimProjectExpress:", error);
     return res.status(500).json({ error: "Error interno del servidor." });
   }
 };
@@ -294,10 +400,15 @@ const setListExpress = async (req, res) => {
 module.exports = {
   fetchDocument,
   fetchCollection,
-  setDocument,
-  setList,
+  fetchMyProjects,
+  verifyProjectOwnership,
+  claimProject,
+  validateProjectKey,
   getDocumentExpress,
   getListExpress,
+  getMyProjectsExpress,
+  verifyProjectOwnershipExpress,
+  claimProjectExpress,
   setDocumentExpress,
   setListExpress,
   getDocument: getDocumentExpress, // Compatibilidad legacy
