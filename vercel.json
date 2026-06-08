@@ -90,6 +90,18 @@
       "destination": "/api/ai?route=reformulate"
     },
     {
+      "source": "/api/register",
+      "destination": "/api/auth?route=register"
+    },
+    {
+      "source": "/api/login",
+      "destination": "/api/auth?route=login"
+    },
+    {
+      "source": "/api/logout",
+      "destination": "/api/auth?route=logout"
+    },
+    {
       "source": "/",
       "destination": "/api/index"
     }

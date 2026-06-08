@@ -15,19 +15,18 @@ const allowedOrigins = [
 
 app.use(
   cors({
-    origin: "*",
+    origin: function (origin, callback) {
+      // Permitir peticiones sin origen (como apps móviles, Postman o backend-to-backend)
+      if (!origin) return callback(null, true);
 
-    // function (origin, callback) {
-    //   // Permitir peticiones sin origen (como apps móviles o Postman)
-    //   if (!origin) return callback(null, true);
-
-    //   if (allowedOrigins.indexOf(origin) === -1) {
-    //     const msg =
-    //       "El policy de CORS para este sitio no permite acceso desde el origen especificado.";
-    //     return callback(new Error(msg), false);
-    //   }
-    //   return callback(null, true);
-    // },
+      if (allowedOrigins.indexOf(origin) !== -1 || origin.startsWith("http://localhost:")) {
+        return callback(null, true);
+      }
+      
+      const msg = "La política de CORS para este sitio no permite acceso desde el origen especificado.";
+      return callback(new Error(msg), false);
+    },
+    credentials: true,
     methods: ["GET", "POST", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
@@ -59,8 +58,12 @@ const {
 const getAlbumImages =
   require("./conmon/photos/phots-public-album").getAlbumImages; // Importa la función directamente
 const { getWeather } = require("./conmon/api/open_weather_map"); // Importa la función directamente
+const { register, login, logout } = require("./conmon/api/auth");
 
 app.post("/api/get-weather", getWeather);
+app.post("/api/register", register);
+app.post("/api/login", login);
+app.post("/api/logout", logout);
 app.post("/api/get-album-images", getAlbumImages);
 app.post("/api/generate-upload-url", generateUploadUrl);
 app.post("/api/delete-file", deleteFile);

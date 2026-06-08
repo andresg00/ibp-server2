@@ -132,7 +132,7 @@ async function verifyProjectOwnership(projectId, userId) {
   const data = doc.data();
   // Comparamos contra userId y ownerId para dar mayor cobertura
   const owned = data.userId === userId || data.ownerId === userId;
-  return { owned };
+  return owned;
 }
 
 /**
