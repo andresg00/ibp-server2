@@ -1,6 +1,6 @@
 const { bucket } = require("../config/firebase");
 const { existMedia } = require("../api/firestore-media");
-const { processFile } = require("./procses-media");
+const { processFile, processDeleteFile } = require("./procses-media");
 // --- Configuración de Firebase Admin ---
 // Leemos las credenciales desde las variables de entorno de Vercel
 
@@ -42,13 +42,14 @@ const generateUploadUrl = async (req, res) => {
     const file = bucket.file(filePathInStorage);
     const [exists] = await file.exists();
     if (exists) {
-      await processFile(file);
-      const doc = await existMedia(hash);
-      const data = doc.data();
-      data.id = doc.id;
-      return res
-        .status(200)
-        .json({ message: "El archivo ya existe en storage.", data });
+      await processDeleteFile(file);
+      // await processFile(file);
+      // const doc = await existMedia(hash);
+      // const data = doc.data();
+      // data.id = doc.id;
+      // return res
+      //   .status(200)
+      //   .json({ message: "El archivo ya existe en storage.", data });
     }
     // 2. Configuramos la URL firmada
     const options = {
