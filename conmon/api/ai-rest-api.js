@@ -94,37 +94,32 @@ const getDescription = async (req, res) => {
         .status(400)
         .json({ error: "Faltan imágenes o formato inválido" });
     }
-
-    // Prompt optimizado con mayor control de contexto y estructura rígida
+    // Construimos el prompt dinámicamente
     const prompt = `
-  [ROL]
-  Eres un Ingeniero Residente de obra civil. Tu tarea es redactar un fragmento de reporte técnico diario.
-
-  [CONTEXTO OBLIGATORIO]
+  ERES UN INGENIEIRO RESIDENTE. TU MISIÓN ES REDACTAR UN REPORTE BASADO EN ESTE CONTEXTO:
   "${context}"
 
-  [REGLAS DE NEGOCIO - CRÍTICAS]
-  1. El CONTEXTO técnico es sagrado y obligatorio. Si el contexto indica que el mortero/concreto vaciado es un "mortero de apoyo para placafácil", el reporte DEBE especificar textualmente que su función es servir de soporte o apoyo para la posterior instalación del sistema de entrepiso Placafácil. Prohibido cambiar el propósito técnico por suposiciones como "solado de limpieza".
-  2. Integra la información visual de las imágenes únicamente para describir el entorno, la forma geométrica (ej. vaciado triangular/esquinero), las guías metálicas y los taludes, pero NUNCA para contradecir o ignorar el propósito descrito en el CONTEXTO.
-  3. REGLAS PERSONALIZADAS DEL USUARIO: ${rules || "Ninguna"}
+  REGLAS DE INTERPRETACIÓN:
+  1. El CONTEXTO manda: Si el contexto dice "fundición", no digas "prefabricado". Si dice "triangulares", busca e identifica esas formas.
+  2. Usa las imágenes para validar y enriquecer el reporte técnico, no para contradecir el contexto.
+  3. REGLAS PERSONALIZADAS: ${rules || "Ninguna"}
 
-  [REGLAS DE ESTILO Y FORMATO (ESTRICTAS)]
-  - Redacta en un único párrafo continuo.
-  - Usa primera persona del plural (ej: "Procedimos a...", "Realizamos...") o lenguaje impersonal (ej: "Se ejecutó...").
-  - NO uses formato Markdown (están prohibidos los asteriscos **, *, almohadillas #, guiones o listas).
-  - PROHIBIDO usar frases de IA como "En la imagen se observa", "Se aprecia", "Como se ve en la foto". Describe directamente la obra.
-
-  [INICIO DEL REPORTE]
+  REGLAS DE FORMATO (ESTRICTAS):
+  - Texto plano, sin Markdown (** o #).
+  - Habla en primera persona o impersonal (ej: "Hemos fundido...", "Se completó la fundición...").
+  - Prohibido decir "En la imagen se observa".
 `;
 
     const result = await model.generateContent([prompt, ...images]);
     const response = await result.response;
 
-    // Limpieza de seguridad robusta para asegurar texto plano puro
+    // Limpieza de seguridad para asegurar texto plano puro
     let cleanText = response
       .text()
-      .replace(/[\*#_\[\]`\-]/g, "") // Limpia múltiples caracteres de markdown de un solo golpe
-      .replace(/\s+/g, " ") // Normaliza espacios dobles o saltos de línea extraños
+      .replace(/\*\*/g, "")
+      .replace(/\*/g, "")
+      .replace(/#/g, "")
+      .replace(/[\[\]]/g, "") // Elimina corchetes por si acaso
       .trim();
 
     res.status(200).json({ result: cleanText });
