@@ -1,31 +1,40 @@
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { GoogleGenAI } = require('@google/genai');
+const { db } = require("./firebase-firestore");
+const { FieldPath } = require("firebase-admin/firestore");
 
-// Inicialización
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-// Asegúrate de usar el string exacto del modelo
-const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+// Inicialización oficial con el SDK moderno unificado de Google
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const MODEL_NAME = 'gemini-2.5-flash';
 
 /**
  * REFORMULAR TEXTO
+ * Modifica notas rápidas tomadas en obra a un lenguaje técnico formal.
  */
 const reformulate = async (req, res) => {
   try {
     const { text, reglas } = req.body;
 
-    // Prompt mejorado: Directo y sin explicaciones
+    if (!text) {
+      return res.status(400).json({ error: "Falta el texto a reformular." });
+    }
+
     const prompt = `Actúa como un Ingeniero Residente experto. 
     Reformula el siguiente texto para un reporte técnico de obra. 
     REGLAS:
     1. Devuelve ÚNICAMENTE el texto reformulado.
     2. No incluyas introducciones como "Aquí tienes" ni explicaciones finales.
     3. Usa terminología técnica de construcción.
-    OTRAS REGLAS: ${reglas}
+    OTRAS REGLAS: ${reglas || "Ninguna"}
     
     Texto a reformular: "${text}"`;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const output = response.text().trim();
+    const response = await ai.models.generateContent({
+      model: MODEL_NAME,
+      contents: prompt,
+    });
+    
+    // En el nuevo SDK la propiedad es .text directo (no función)
+    const output = response.text.trim();
 
     res.status(200).json({ result: output });
   } catch (error) {
@@ -33,26 +42,23 @@ const reformulate = async (req, res) => {
 
     if (error.message.includes("429")) {
       return res.status(429).json({
-        error:
-          "Has agotado el límite de peticiones gratuitas. Por favor, espera un momento antes de intentar de nuevo.",
+        error: "Has agotado el límite de peticiones gratuitas. Por favor, espera un momento antes de intentar de nuevo.",
       });
     }
 
-    res
-      .status(500)
-      .json({ error: "Error interno del servidor al procesar la solicitud." });
+    res.status(500).json({ error: "Error interno del servidor al procesar la solicitud." });
   }
 };
 
 /**
  * EJECUTAR ORDEN
+ * Asistente de ingeniería general para resolver dudas o procesar solicitudes en texto plano.
  */
 const execute = async (req, res) => {
   try {
     const { orden } = req.body;
     if (!orden) return res.status(400).json({ error: "Falta la orden" });
 
-    // Instrucción de Sistema: Define el comportamiento global
     const prompt = `Instrucción del sistema: Eres un asistente técnico de ingeniería. 
     Responde a la solicitud del usuario de forma profesional y completa.
     
@@ -65,14 +71,14 @@ const execute = async (req, res) => {
 
     Solicitud del usuario: "${orden}"`;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
+    const response = await ai.models.generateContent({
+      model: MODEL_NAME,
+      contents: prompt,
+    });
 
-    // Limpieza adicional por si la IA ignora las instrucciones
-    let cleanText = response
-      .text()
-      .replace(/\*\*/g, "") // Elimina negritas dobles
-      .replace(/\*/g, "") // Elimina asteriscos simples
+    let cleanText = response.text
+      .replace(/\*\*/g, "") 
+      .replace(/\*/g, "") 
       .trim();
 
     res.status(200).json({ result: cleanText });
@@ -83,21 +89,75 @@ const execute = async (req, res) => {
 };
 
 /**
- * DESCRIBIR IMÁGENES
+ * DESCRIBIR IMÁGENES 
+ * Descarga miniaturas de 400px en paralelo, convierte a Base64 en RAM y procesa con Gemini.
+ * Consumo en disco = 0 KB. Blindado a máximo 3 imágenes.
  */
 const getDescription = async (req, res) => {
   try {
-    const { images, rules, context } = req.body;
+    let { images, ids, rules, context } = req.body;
 
-    if (!images || !Array.isArray(images)) {
-      return res
-        .status(400)
-        .json({ error: "Faltan imágenes o formato inválido" });
+    // 1. DEFENSA EN PROFUNDIDAD: Limitamos estrictamente a un máximo de 3 elementos en el servidor
+    if (ids && Array.isArray(ids)) {
+      ids = ids.slice(0, 3);
     }
-    // Construimos el prompt dinámicamente
+    if (images && Array.isArray(images)) {
+      images = images.slice(0, 3);
+    }
+
+    // 2. Si vienen IDs de Firestore, resolvemos las URLs de sus miniaturas de 400px
+    if (ids && ids.length > 0) {
+      const snapshot = await db
+        .collection("media")
+        .where(FieldPath.documentId(), "in", ids)
+        .get();
+      
+      images = snapshot.docs
+        .map(doc => doc.data().thumbs400)
+        .filter(url => url !== undefined && url !== null);
+    }
+
+    // Validación por si los arreglos quedaron vacíos tras los filtros
+    if (!images || !Array.isArray(images) || images.length === 0) {
+      return res.status(400).json({ error: "Faltan las URLs de las imágenes o los IDs son inválidos." });
+    }
+
+    // 3. Descarga asíncrona de las miniaturas en PARALELO directo a la memoria RAM
+    const imagePromises = images.map(async (url) => {
+      try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const arrayBuffer = await response.arrayBuffer();
+        const base64Data = Buffer.from(arrayBuffer).toString('base64');
+        
+        let mimeType = 'image/jpeg';
+        if (url.toLowerCase().includes('.png')) mimeType = 'image/png';
+        if (url.toLowerCase().includes('.webp')) mimeType = 'image/webp';
+
+        return {
+          inlineData: {
+            data: base64Data,
+            mimeType: mimeType
+          }
+        };
+      } catch (e) {
+        console.error(`Error procesando la URL [${url}]:`, e.message);
+        return null; // Retornamos null para ignorar las descargas fallidas de forma limpia
+      }
+    });
+
+    const resolvedImages = await Promise.all(imagePromises);
+    const imageParts = resolvedImages.filter(part => part !== null);
+
+    if (imageParts.length === 0) {
+      return res.status(400).json({ error: "No se pudo procesar ninguna imagen para el análisis." });
+    }
+
+    // 4. Prompt Técnico de Ingeniería Estricto
     const prompt = `
-  ERES UN INGENIEIRO RESIDENTE. TU MISIÓN ES REDACTAR UN REPORTE BASADO EN ESTE CONTEXTO:
-  "${context}"
+  ERES UN INGENIERO RESIDENTE. TU MISIÓN ES REDACTAR UN REPORTE BASADO EN ESTE CONTEXTO:
+  "${context || "Reporte técnico rutinario de inspección de obra."}"
 
   REGLAS DE INTERPRETACIÓN:
   1. El CONTEXTO manda: Si el contexto dice "fundición", no digas "prefabricado". Si dice "triangulares", busca e identifica esas formas.
@@ -110,22 +170,20 @@ const getDescription = async (req, res) => {
   - Prohibido decir "En la imagen se observa".
 `;
 
-    const result = await model.generateContent([prompt, ...images]);
-    const response = await result.response;
+    // 5. Petición directa combinando el prompt de ingeniería y los bloques Base64
+    const response = await ai.models.generateContent({
+      model: MODEL_NAME,
+      contents: [prompt, ...imageParts],
+    });
 
-    // Limpieza de seguridad para asegurar texto plano puro
-    let cleanText = response
-      .text()
-      .replace(/\*\*/g, "")
-      .replace(/\*/g, "")
-      .replace(/#/g, "")
-      .replace(/[\[\]]/g, "") // Elimina corchetes por si acaso
-      .trim();
+    // 6. Limpieza final redundante de caracteres Markdown residuales
+    let cleanText = response.text.replace(/[\*#\[\]]/g, "").trim();
 
     res.status(200).json({ result: cleanText });
+
   } catch (error) {
-    console.error("Error en Gemini (Description):", error.message);
-    res.status(500).json({ error: error.message });
+    console.error("Error general en getDescription:", error.message);
+    res.status(500).json({ error: "Error interno al procesar la descripción de imágenes." });
   }
 };
 

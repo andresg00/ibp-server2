@@ -398,6 +398,7 @@ const setListExpress = async (req, res) => {
 };
 
 module.exports = {
+  db,
   fetchDocument,
   fetchCollection,
   fetchMyProjects,
