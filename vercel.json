@@ -30,6 +30,14 @@
       "destination": "/api/firebase?route=get-list"
     },
     {
+      "source": "/api/get-first-document",
+      "destination": "/api/firebase?route=get-first-document"
+    },
+    {
+      "source": "/api/get-last-document",
+      "destination": "/api/firebase?route=get-last-document"
+    },
+    {
       "source": "/api/get-my-projects",
       "destination": "/api/firebase?route=get-my-projects"
     },

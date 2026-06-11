@@ -1,4 +1,14 @@
 const { db } = require("../config/firebase");
+const { pushNotification } = require("./notifications");
+// Cargar las claves de acceso autorizadas desde el entorno
+let validAccessKeys = [];
+try {
+  if (process.env.FIREBASE_ACCESS_KEYS) {
+    validAccessKeys = JSON.parse(process.env.FIREBASE_ACCESS_KEYS);
+  }
+} catch (e) {
+  console.error("Error parsing FIREBASE_ACCESS_KEYS from environment:", e);
+}
 
 /**
  * Valida la clave específica de un proyecto (placeholder para implementación diferida).
@@ -95,6 +105,134 @@ async function fetchCollection(path, accessKey, filter, order) {
 }
 
 /**
+ * Lógica pura para obtener el primer documento de Firestore basado en filtros y ordenamiento.
+ */
+async function fetchFirstDocument(path, accessKey, filter, order) {
+  if (!validateAcces(accessKey)) {
+    throw new Error("UNAUTHORIZED");
+  }
+  if (!path) {
+    throw new Error("MISSING_PATH");
+  }
+
+  let queryRef = db.collection(path);
+
+  // Aplicar filtros dinámicos (enviados como JSON stringificado desde Angular/Vite)
+  if (filter) {
+    let parsedFilter;
+    try {
+      parsedFilter = typeof filter === "string" ? JSON.parse(filter) : filter;
+    } catch (e) {
+      console.warn("Fallo al parsear filter JSON:", e.message);
+    }
+
+    if (Array.isArray(parsedFilter)) {
+      parsedFilter.forEach((f) => {
+        if (f.field && f.operator && f.value !== undefined) {
+          queryRef = queryRef.where(f.field, f.operator, f.value);
+        }
+      });
+    }
+  }
+
+  // Aplicar orden dinámico
+  if (order) {
+    let parsedOrder;
+    try {
+      parsedOrder = typeof order === "string" ? JSON.parse(order) : order;
+    } catch (e) {
+      console.warn("Fallo al parsear order JSON:", e.message);
+    }
+
+    if (parsedOrder) {
+      if (typeof parsedOrder === "string") {
+        queryRef = queryRef.orderBy(parsedOrder);
+      } else if (parsedOrder.field) {
+        queryRef = queryRef.orderBy(
+          parsedOrder.field,
+          parsedOrder.direction || "asc",
+        );
+      }
+    }
+  }
+
+  const snapshot = await queryRef.limit(1).get();
+  if (snapshot.empty) {
+    throw new Error("NOT_FOUND");
+  }
+  let document;
+  snapshot.forEach((doc) => {
+    document = { id: doc.id, ...doc.data() };
+  });
+  return document;
+}
+
+/**
+ * Lógica pura para obtener el último documento de Firestore basado en filtros y ordenamiento.
+ */
+async function fetchLastDocument(path, accessKey, filter, order) {
+  if (!validateAcces(accessKey)) {
+    throw new Error("UNAUTHORIZED");
+  }
+  if (!path) {
+    throw new Error("MISSING_PATH");
+  }
+
+  let queryRef = db.collection(path);
+
+  // Aplicar filtros dinámicos (enviados como JSON stringificado desde Angular/Vite)
+  if (filter) {
+    let parsedFilter;
+    try {
+      parsedFilter = typeof filter === "string" ? JSON.parse(filter) : filter;
+    } catch (e) {
+      console.warn("Fallo al parsear filter JSON:", e.message);
+    }
+
+    if (Array.isArray(parsedFilter)) {
+      parsedFilter.forEach((f) => {
+        if (f.field && f.operator && f.value !== undefined) {
+          queryRef = queryRef.where(f.field, f.operator, f.value);
+        }
+      });
+    }
+  }
+
+  // Para obtener el último documento, invertimos el ordenamiento dinámico.
+  // Si no se especifica ordenamiento, ordenamos por "__name__" (ID de documento) en orden descendente.
+  if (order) {
+    let parsedOrder;
+    try {
+      parsedOrder = typeof order === "string" ? JSON.parse(order) : order;
+    } catch (e) {
+      console.warn("Fallo al parsear order JSON:", e.message);
+    }
+
+    if (parsedOrder) {
+      if (typeof parsedOrder === "string") {
+        queryRef = queryRef.orderBy(parsedOrder, "desc");
+      } else if (parsedOrder.field) {
+        const originalDirection = parsedOrder.direction || "asc";
+        const invertedDirection = originalDirection === "asc" ? "desc" : "asc";
+        queryRef = queryRef.orderBy(parsedOrder.field, invertedDirection);
+      }
+    }
+  } else {
+    queryRef = queryRef.orderBy("__name__", "desc");
+  }
+
+  const snapshot = await queryRef.limit(1).get();
+  if (snapshot.empty) {
+    throw new Error("NOT_FOUND");
+  }
+  let document;
+  snapshot.forEach((doc) => {
+    document = { id: doc.id, ...doc.data() };
+  });
+  return document;
+}
+
+/**
  * Lógica pura para obtener los proyectos específicos de un usuario en Firestore.
  */
 async function fetchMyProjects(userId) {
@@ -103,9 +241,10 @@ async function fetchMyProjects(userId) {
   }
 
   // Buscamos los proyectos donde el campo userId sea igual al parámetro de consulta
+  //verificar si el id esta en la lista de  dueños
   const snapshot = await db
     .collection("projects")
-    .where("userId", "==", userId)
+    .where("owners", "array-contains", userId)
     .get();
   const projects = [];
   snapshot.forEach((doc) => {
@@ -131,7 +270,7 @@ async function verifyProjectOwnership(projectId, userId) {
   }
   const data = doc.data();
   // Comparamos contra userId y ownerId para dar mayor cobertura
-  const owned = data.userId === userId || data.ownerId === userId;
+  const owned = data.owners?.includes(userId) || false;
   return owned;
 }
 
@@ -154,8 +293,13 @@ async function claimProject(projectId, userId, accessKey) {
   if (!doc.exists) {
     throw new Error("NOT_FOUND");
   }
-
-  await docRef.update({ userId: userId });
+  const data = doc.data();  
+  const owners = data.owners || [];
+  if (owners.includes(userId)) {
+    return { success: false, message: "Project already claimed" };
+  }
+  owners.push(userId);
+  await docRef.update({ owners });
   return { success: true };
 }
 
@@ -163,7 +307,8 @@ async function claimProject(projectId, userId, accessKey) {
  * Lógica pura para escribir/actualizar un documento en Firestore.
  */
 async function setDocument(path, data, accessKey) {
-  if (!validAccessKeys.includes(accessKey)) {
+  const isPublicPath = path && (path.startsWith("contact") || path.startsWith("public/"));
+  if (!isPublicPath && !validAccessKeys.includes(accessKey)) {
     throw new Error("UNAUTHORIZED");
   }
   if (!path) {
@@ -172,7 +317,9 @@ async function setDocument(path, data, accessKey) {
   if (!data) {
     throw new Error("MISSING_DATA");
   }
-
+  if (path.startsWith("contact-MS-v2")) {
+    await pushNotification(data);    
+  }
   const docRef = db.doc(path);
   await docRef.set(data, { merge: true });
   return { id: docRef.id };
@@ -182,7 +329,8 @@ async function setDocument(path, data, accessKey) {
  * Lógica pura para realizar escritura en lote (batch set) de una lista de documentos.
  */
 async function setList(path, list, accessKey) {
-  if (!validAccessKeys.includes(accessKey)) {
+  const isPublicPath = path && (path.startsWith("contact") || path.startsWith("public/"));
+  if (!isPublicPath && !validAccessKeys.includes(accessKey)) {
     throw new Error("UNAUTHORIZED");
   }
   if (!path) {
@@ -267,23 +415,81 @@ const getListExpress = async (req, res) => {
   }
 };
 
+const getFirstDocumentExpress = async (req, res) => {
+  if (req.method !== "GET") {
+    res.setHeader("Allow", ["GET"]);
+    return res.status(405).json({ error: "Método no permitido. Usa GET." });
+  }
+
+  const { path, filter, order } = req.query;
+  const accessKey = req.headers["authorization"];
+  const normalizedKey =
+    accessKey === "undefined" || accessKey === "" ? undefined : accessKey;
+
+  try {
+    const document = await fetchFirstDocument(path, normalizedKey, filter, order);
+    return res.status(200).json({ document });
+  } catch (error) {
+    if (error.message === "UNAUTHORIZED") {
+      return res.status(403).json({ error: "Clave de acceso inválida." });
+    }
+    if (error.message === "MISSING_PATH") {
+      return res.status(400).json({ error: "Falta el parámetro 'path'." });
+    }
+    if (error.message === "NOT_FOUND") {
+      return res.status(404).json({ error: "Documento no encontrado." });
+    }
+    console.error("Error al obtener el primer documento (Express):", error);
+    return res.status(500).json({ error: "Error interno del servidor." });
+  }
+};
+
+const getLastDocumentExpress = async (req, res) => {
+  if (req.method !== "GET") {
+    res.setHeader("Allow", ["GET"]);
+    return res.status(405).json({ error: "Método no permitido. Usa GET." });
+  }
+
+  const { path, filter, order } = req.query;
+  const accessKey = req.headers["authorization"];
+  const normalizedKey =
+    accessKey === "undefined" || accessKey === "" ? undefined : accessKey;
+
+  try {
+    const document = await fetchLastDocument(path, normalizedKey, filter, order);
+    return res.status(200).json({ document });
+  } catch (error) {
+    if (error.message === "UNAUTHORIZED") {
+      return res.status(403).json({ error: "Clave de acceso inválida." });
+    }
+    if (error.message === "MISSING_PATH") {
+      return res.status(400).json({ error: "Falta el parámetro 'path'." });
+    }
+    if (error.message === "NOT_FOUND") {
+      return res.status(404).json({ error: "Documento no encontrado." });
+    }
+    console.error("Error al obtener el último documento (Express):", error);
+    return res.status(500).json({ error: "Error interno del servidor." });
+  }
+};
+
 const getMyProjectsExpress = async (req, res) => {
   if (req.method !== "GET") {
     res.setHeader("Allow", ["GET"]);
     return res.status(405).json({ error: "Método no permitido. Usa GET." });
   }
 
-  const userId = req.query?.userId;
+  const userId = req.query?.userId || req.query?.userUid;
 
   try {
     const projects = await fetchMyProjects(userId);
-    return res.status(200).json(projects);
+    return res.status(200).json({ projects });
   } catch (error) {
     if (error.message === "UNAUTHORIZED") {
       return res.status(403).json({ error: "Clave de acceso inválida." });
     }
     if (error.message === "MISSING_USER_ID") {
-      return res.status(400).json({ error: "Falta el parámetro 'userId'." });
+      return res.status(400).json({ error: "Falta el parámetro 'userId' o 'userUid'." });
     }
     console.error("Error en getMyProjectsExpress:", error);
     return res.status(500).json({ error: "Error interno del servidor." });
@@ -401,12 +607,16 @@ module.exports = {
   db,
   fetchDocument,
   fetchCollection,
+  fetchFirstDocument,
+  fetchLastDocument,
   fetchMyProjects,
   verifyProjectOwnership,
   claimProject,
   validateProjectKey,
   getDocumentExpress,
   getListExpress,
+  getFirstDocumentExpress,
+  getLastDocumentExpress,
   getMyProjectsExpress,
   verifyProjectOwnershipExpress,
   claimProjectExpress,

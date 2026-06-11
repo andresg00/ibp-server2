@@ -1,6 +1,8 @@
 const {
   fetchDocument,
   fetchCollection,
+  fetchFirstDocument,
+  fetchLastDocument,
   fetchMyProjects,
   verifyProjectOwnership,
   claimProject,
@@ -65,6 +67,58 @@ module.exports = async function handler(req, res) {
           "public, max-age=10, s-maxage=60, stale-while-revalidate=600",
         );
         return res.status(200).json({ documents });
+      }
+
+      case "get-first-document": {
+        if (req.method !== "GET") {
+          res.setHeader("Allow", ["GET"]);
+          res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+          return res
+            .status(405)
+            .json({ error: "Método no permitido. Usa GET para get-first-document." });
+        }
+        const { path, filter, order } = req.query;
+        const finalKey = req.headers["authorization"];
+        const normalizedKey =
+          finalKey === "undefined" || finalKey === "" ? undefined : finalKey;
+
+        const document = await fetchFirstDocument(
+          path,
+          normalizedKey,
+          filter,
+          order,
+        );
+        res.setHeader(
+          "Cache-Control",
+          "public, max-age=10, s-maxage=60, stale-while-revalidate=600",
+        );
+        return res.status(200).json({ document });
+      }
+
+      case "get-last-document": {
+        if (req.method !== "GET") {
+          res.setHeader("Allow", ["GET"]);
+          res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+          return res
+            .status(405)
+            .json({ error: "Método no permitido. Usa GET para get-last-document." });
+        }
+        const { path, filter, order } = req.query;
+        const finalKey = req.headers["authorization"];
+        const normalizedKey =
+          finalKey === "undefined" || finalKey === "" ? undefined : finalKey;
+
+        const document = await fetchLastDocument(
+          path,
+          normalizedKey,
+          filter,
+          order,
+        );
+        res.setHeader(
+          "Cache-Control",
+          "public, max-age=10, s-maxage=60, stale-while-revalidate=600",
+        );
+        return res.status(200).json({ document });
       }
 
       case "get-my-projects": {

@@ -49,6 +49,8 @@ const {
 const {
   getDocumentExpress,
   getListExpress,
+  getFirstDocumentExpress,
+  getLastDocumentExpress,
   setDocumentExpress,
   setListExpress,
   getMyProjectsExpress,
@@ -70,6 +72,8 @@ app.post("/api/delete-file", deleteFile);
 app.post("/api/check-media", checkMedia);
 app.get("/api/get-document", getDocumentExpress);
 app.get("/api/get-list", getListExpress);
+app.get("/api/get-first-document", getFirstDocumentExpress);
+app.get("/api/get-last-document", getLastDocumentExpress);
 app.get("/api/get-my-projects", getMyProjectsExpress);
 app.get("/api/verify-project-ownership", verifyProjectOwnershipExpress);
 app.post("/api/claim-project", claimProjectExpress);
