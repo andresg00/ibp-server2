@@ -603,6 +603,8 @@ module.exports = {
   verifyProjectOwnership,
   claimProject,
   validateProjectKey,
+  setDocument,
+  setList,
   getDocumentExpress,
   getListExpress,
   getFirstDocumentExpress,
