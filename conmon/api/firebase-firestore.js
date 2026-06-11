@@ -1,14 +1,6 @@
 const { db } = require("../config/firebase");
 const { pushNotification } = require("./notifications");
 // Cargar las claves de acceso autorizadas desde el entorno
-let validAccessKeys = [];
-try {
-  if (process.env.FIREBASE_ACCESS_KEYS) {
-    validAccessKeys = JSON.parse(process.env.FIREBASE_ACCESS_KEYS);
-  }
-} catch (e) {
-  console.error("Error parsing FIREBASE_ACCESS_KEYS from environment:", e);
-}
 
 /**
  * Valida la clave específica de un proyecto (placeholder para implementación diferida).
@@ -29,7 +21,7 @@ function validateAcces(path, userId) {
  * Lógica pura para obtener un documento de Firestore.
  */
 async function fetchDocument(path, accessKey) {
-  if (!validateAcces(accessKey)) {
+  if (!validateAcces(path, accessKey)) {
     throw new Error("UNAUTHORIZED");
   }
   if (!path) {
@@ -48,7 +40,7 @@ async function fetchDocument(path, accessKey) {
  * Lógica pura para obtener una colección/lista de Firestore con filtros y ordenamientos dinámicos.
  */
 async function fetchCollection(path, accessKey, filter, order) {
-  if (!validateAcces(accessKey)) {
+  if (!validateAcces(path, accessKey)) {
     throw new Error("UNAUTHORIZED");
   }
   if (!path) {
@@ -108,7 +100,7 @@ async function fetchCollection(path, accessKey, filter, order) {
  * Lógica pura para obtener el primer documento de Firestore basado en filtros y ordenamiento.
  */
 async function fetchFirstDocument(path, accessKey, filter, order) {
-  if (!validateAcces(accessKey)) {
+  if (!validateAcces(path, accessKey)) {
     throw new Error("UNAUTHORIZED");
   }
   if (!path) {
@@ -171,7 +163,7 @@ async function fetchFirstDocument(path, accessKey, filter, order) {
  * Lógica pura para obtener el último documento de Firestore basado en filtros y ordenamiento.
  */
 async function fetchLastDocument(path, accessKey, filter, order) {
-  if (!validateAcces(accessKey)) {
+  if (!validateAcces(path, accessKey)) {
     throw new Error("UNAUTHORIZED");
   }
   if (!path) {
@@ -307,8 +299,7 @@ async function claimProject(projectId, userId, accessKey) {
  * Lógica pura para escribir/actualizar un documento en Firestore.
  */
 async function setDocument(path, data, accessKey) {
-  const isPublicPath = path && (path.startsWith("contact") || path.startsWith("public/"));
-  if (!isPublicPath && !validAccessKeys.includes(accessKey)) {
+  if (!validateAcces(path,accessKey)) {
     throw new Error("UNAUTHORIZED");
   }
   if (!path) {
@@ -329,8 +320,7 @@ async function setDocument(path, data, accessKey) {
  * Lógica pura para realizar escritura en lote (batch set) de una lista de documentos.
  */
 async function setList(path, list, accessKey) {
-  const isPublicPath = path && (path.startsWith("contact") || path.startsWith("public/"));
-  if (!isPublicPath && !validAccessKeys.includes(accessKey)) {
+  if (!validateAcces(path,accessKey)) {
     throw new Error("UNAUTHORIZED");
   }
   if (!path) {

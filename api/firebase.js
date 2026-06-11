@@ -18,26 +18,6 @@ module.exports = async function handler(req, res) {
     return res.status(200).end();
   }
 
-  // Normalizar y asegurar que req.body esté parseado como un objeto
-  if (req.body) {
-    if (typeof req.body === "string") {
-      try {
-        req.body = JSON.parse(req.body);
-      } catch (e) {
-        console.warn("Fallo al parsear req.body string como JSON:", e.message);
-      }
-    } else if (Buffer.isBuffer(req.body)) {
-      try {
-        req.body = JSON.parse(req.body.toString("utf-8"));
-      } catch (e) {
-        console.warn("Fallo al parsear req.body Buffer como JSON:", e.message);
-      }
-    }
-  }
-  if (!req.body) {
-    req.body = {};
-  }
-
   const route = req.query.route;
 
   try {
@@ -259,10 +239,6 @@ module.exports = async function handler(req, res) {
       return res.status(404).json({ error: "Proyecto no encontrado." });
     }
     console.error(`Error en api/firebase (${route}):`, error);
-    return res.status(500).json({
-      error: "Error interno del servidor.",
-      details: error.message,
-      stack: error.stack,
-    });
+    return res.status(500).json({ error: "Error interno del servidor." });
   }
 };
