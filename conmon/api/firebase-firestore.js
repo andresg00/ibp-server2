@@ -308,7 +308,7 @@ async function setDocument(path, data, accessKey) {
   if (!data) {
     throw new Error("MISSING_DATA");
   }
-  if (path.startsWith("contact-MS-v2")) {
+  if (path.startsWith("notifications-V2")) {
     await pushNotification(data);
     // data.date = Date.now();
   }
