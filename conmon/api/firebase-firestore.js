@@ -309,7 +309,8 @@ async function setDocument(path, data, accessKey) {
     throw new Error("MISSING_DATA");
   }
   if (path.startsWith("contact-MS-v2")) {
-    await pushNotification(data);    
+    await pushNotification(data);
+    data.date = Date.now();
   }
   const docRef = db.doc(path);
   await docRef.set(data, { merge: true });
