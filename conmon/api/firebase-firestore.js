@@ -299,7 +299,7 @@ async function claimProject(projectId, userId, accessKey) {
  * Lógica pura para escribir/actualizar un documento en Firestore.
  */
 async function setDocument(path, data, accessKey) {
-  if (!validateAcces(path,accessKey)) {
+  if (!validateAcces(path, accessKey)) {
     throw new Error("UNAUTHORIZED");
   }
   if (!path) {
@@ -308,12 +308,29 @@ async function setDocument(path, data, accessKey) {
   if (!data) {
     throw new Error("MISSING_DATA");
   }
-  if (path.startsWith("notifications-V2")) {
-    await pushNotification(data);
-    // data.date = Date.now();
+
+  // 1. Limpiar la ruta (quitar barras al inicio o final si existen) y dividirla
+  const cleanPath = path.replace(/^\/|\/$/g, '');
+  const segments = cleanPath.split('/');
+  
+  let finalPath = cleanPath;
+
+  // 2. Si el número de segmentos es IMPAR, significa que apunta a una colección (falta el ID)
+  if (segments.length % 2 !== 0) {
+    // Generamos un ID automático usando el SDK de Firestore para esa colección
+    const autoId = db.collection(cleanPath).doc().id;
+    finalPath = `${cleanPath}/${autoId}`;
   }
-  const docRef = db.doc(path);
+
+  // 3. Tu lógica específica para notificaciones (usando el path limpio o validando el inicio)
+  if (finalPath.startsWith("notifications-V2")) {
+    await pushNotification(data);
+  }
+
+  // 4. Escribir en Firestore con la ruta definitiva (que ahora seguro es de un documento)
+  const docRef = db.doc(finalPath);
   await docRef.set(data, { merge: true });
+
   return { id: docRef.id };
 }
 
