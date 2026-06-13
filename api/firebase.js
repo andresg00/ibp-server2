@@ -136,7 +136,7 @@ module.exports = async function handler(req, res) {
           "Cache-Control",
           "public, max-age=10, s-maxage=60, stale-while-revalidate=600",
         );
-        return res.status(200).json(projects);
+        return res.status(200).json({ projects });
       }
 
       case "verify-project-ownership": {
