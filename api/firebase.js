@@ -223,7 +223,7 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ error: "Falta el parámetro 'projectId'." });
     }
     if (error.message === "MISSING_USER_ID") {
-      return res.status(400).json({ error: "Falta el parámetro 'userId'." });
+      return res.status(400).json({ error: "Falta el parámetro 'uid'." });
     }
     if (error.message === "MISSING_DATA") {
       return res

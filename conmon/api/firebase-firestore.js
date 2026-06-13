@@ -14,7 +14,7 @@ async function validateProjectKey(projectId, accessKey) {
   return keys[projectId] && keys[projectId] === accessKey;
 }
 // PRO-438W-8HFNF
-function validateAcces(path, userId) {
+function validateAcces(path, uid) {
   return true;
 }
 /**
@@ -227,16 +227,16 @@ async function fetchLastDocument(path, accessKey, filter, order) {
 /**
  * Lógica pura para obtener los proyectos específicos de un usuario en Firestore.
  */
-async function fetchMyProjects(userId) {
-  if (!userId) {
+async function fetchMyProjects(uid) {
+  if (!uid) {
     throw new Error("MISSING_USER_ID");
   }
 
-  // Buscamos los proyectos donde el campo userId sea igual al parámetro de consulta
+  // Buscamos los proyectos donde el campo uid sea igual al parámetro de consulta
   //verificar si el id esta en la lista de  dueños
   const snapshot = await db
     .collection("projects")
-    .where("owners", "array-contains", userId)
+    .where("owners", "array-contains", uid)
     .get();
   const projects = [];
   snapshot.forEach((doc) => {
@@ -248,11 +248,11 @@ async function fetchMyProjects(userId) {
 /**
  * Lógica pura para verificar si un proyecto pertenece a un usuario.
  */
-async function verifyProjectOwnership(projectId, userId) {
+async function verifyProjectOwnership(projectId, uid) {
   if (!projectId) {
     throw new Error("MISSING_PROJECT_ID");
   }
-  if (!userId) {
+  if (!uid) {
     throw new Error("MISSING_USER_ID");
   }
 
@@ -261,22 +261,22 @@ async function verifyProjectOwnership(projectId, userId) {
     return { owned: false, message: "Project not found" };
   }
   const data = doc.data();
-  // Comparamos contra userId y ownerId para dar mayor cobertura
-  const owned = data.owners?.includes(userId) || false;
+  // Comparamos contra uid y ownerId para dar mayor cobertura
+  const owned = data.owners?.includes(uid) || false;
   return owned;
 }
 
 /**
  * Lógica pura para reclamar/asignar un proyecto a un usuario en Firestore.
  */
-async function claimProject(projectId, userId, accessKey) {
+async function claimProject(projectId, uid, accessKey) {
   if (!(await validateProjectKey(projectId, accessKey))) {
     throw new Error("UNAUTHORIZED");
   }
   if (!projectId) {
     throw new Error("MISSING_PROJECT_ID");
   }
-  if (!userId) {
+  if (!uid) {
     throw new Error("MISSING_USER_ID");
   }
 
@@ -285,12 +285,12 @@ async function claimProject(projectId, userId, accessKey) {
   if (!doc.exists) {
     throw new Error("NOT_FOUND");
   }
-  const data = doc.data();  
+  const data = doc.data();
   const owners = data.owners || [];
-  if (owners.includes(userId)) {
+  if (owners.includes(uid)) {
     return { success: false, message: "Project already claimed" };
   }
-  owners.push(userId);
+  owners.push(uid);
   await docRef.update({ owners });
   return { success: true };
 }
@@ -312,7 +312,7 @@ async function setDocument(path, data, accessKey) {
   // 1. Limpiar la ruta (quitar barras al inicio o final si existen) y dividirla
   const cleanPath = path.replace(/^\/|\/$/g, '');
   const segments = cleanPath.split('/');
-  
+
   let finalPath = cleanPath;
 
   // 2. Si el número de segmentos es IMPAR, significa que apunta a una colección (falta el ID)
@@ -338,7 +338,7 @@ async function setDocument(path, data, accessKey) {
  * Lógica pura para realizar escritura en lote (batch set) de una lista de documentos.
  */
 async function setList(path, list, accessKey) {
-  if (!validateAcces(path,accessKey)) {
+  if (!validateAcces(path, accessKey)) {
     throw new Error("UNAUTHORIZED");
   }
   if (!path) {
@@ -487,17 +487,17 @@ const getMyProjectsExpress = async (req, res) => {
     return res.status(405).json({ error: "Método no permitido. Usa GET." });
   }
 
-  const userId = req.query?.userId || req.query?.userUid;
+  const uid = req.query?.uid;
 
   try {
-    const projects = await fetchMyProjects(userId);
+    const projects = await fetchMyProjects(uid);
     return res.status(200).json({ projects });
   } catch (error) {
     if (error.message === "UNAUTHORIZED") {
       return res.status(403).json({ error: "Clave de acceso inválida." });
     }
     if (error.message === "MISSING_USER_ID") {
-      return res.status(400).json({ error: "Falta el parámetro 'userId' o 'userUid'." });
+      return res.status(400).json({ error: "Falta el parámetro 'uid'." });
     }
     console.error("Error en getMyProjectsExpress:", error);
     return res.status(500).json({ error: "Error interno del servidor." });
@@ -510,10 +510,10 @@ const verifyProjectOwnershipExpress = async (req, res) => {
     return res.status(405).json({ error: "Método no permitido. Usa GET." });
   }
 
-  const { projectId, userId } = req.query;
+  const { projectId, uid } = req.query;
 
   try {
-    const result = await verifyProjectOwnership(projectId, userId);
+    const result = await verifyProjectOwnership(projectId, uid);
     return res.status(200).json(result);
   } catch (error) {
     if (error.message === "UNAUTHORIZED") {
@@ -523,7 +523,7 @@ const verifyProjectOwnershipExpress = async (req, res) => {
       return res.status(400).json({ error: "Falta el parámetro 'projectId'." });
     }
     if (error.message === "MISSING_USER_ID") {
-      return res.status(400).json({ error: "Falta el parámetro 'userId'." });
+      return res.status(400).json({ error: "Falta el parámetro 'uid'." });
     }
     console.error("Error en verifyProjectOwnershipExpress:", error);
     return res.status(500).json({ error: "Error interno del servidor." });
@@ -536,12 +536,12 @@ const claimProjectExpress = async (req, res) => {
     return res.status(405).json({ error: "Método no permitido. Usa POST." });
   }
 
-  const { projectId, userId, accessKey: bodyKey } = req.body;
+  const { projectId, uid, accessKey: bodyKey } = req.body;
   const headerKey = req.headers["authorization"];
   const accessKey = headerKey || bodyKey;
 
   try {
-    const result = await claimProject(projectId, userId, accessKey);
+    const result = await claimProject(projectId, uid, accessKey);
     return res.status(200).json(result);
   } catch (error) {
     if (error.message === "UNAUTHORIZED") {
@@ -553,7 +553,7 @@ const claimProjectExpress = async (req, res) => {
       return res.status(400).json({ error: "Falta el parámetro 'projectId'." });
     }
     if (error.message === "MISSING_USER_ID") {
-      return res.status(400).json({ error: "Falta el parámetro 'userId'." });
+      return res.status(400).json({ error: "Falta el parámetro 'uid'." });
     }
     if (error.message === "NOT_FOUND") {
       return res.status(404).json({ error: "Proyecto no encontrado." });
