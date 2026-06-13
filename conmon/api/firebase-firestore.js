@@ -487,7 +487,7 @@ const getMyProjectsExpress = async (req, res) => {
     return res.status(405).json({ error: "Método no permitido. Usa GET." });
   }
 
-  const uid = req.query?.uid;
+  const uid = req.query?.uid || req.query?.userId || req.query?.userUid || req.query?.useruid;
 
   try {
     const projects = await fetchMyProjects(uid);
@@ -510,7 +510,8 @@ const verifyProjectOwnershipExpress = async (req, res) => {
     return res.status(405).json({ error: "Método no permitido. Usa GET." });
   }
 
-  const { projectId, uid } = req.query;
+  const { projectId } = req.query;
+  const uid = req.query?.uid || req.query?.userId || req.query?.userUid || req.query?.useruid;
 
   try {
     const result = await verifyProjectOwnership(projectId, uid);
@@ -536,7 +537,8 @@ const claimProjectExpress = async (req, res) => {
     return res.status(405).json({ error: "Método no permitido. Usa POST." });
   }
 
-  const { projectId, uid, accessKey: bodyKey } = req.body;
+  const { projectId, accessKey: bodyKey } = req.body;
+  const uid = req.body?.uid || req.body?.userId || req.body?.userUid || req.body?.useruid;
   const headerKey = req.headers["authorization"];
   const accessKey = headerKey || bodyKey;
 

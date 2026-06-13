@@ -129,7 +129,7 @@ module.exports = async function handler(req, res) {
             error: "Método no permitido. Usa GET para get-my-projects.",
           });
         }
-        const { uid } = req.query;
+        const uid = req.query.uid || req.query.userId || req.query.userUid || req.query.useruid;
 
         const projects = await fetchMyProjects(uid);
         res.setHeader(
@@ -148,7 +148,8 @@ module.exports = async function handler(req, res) {
               "Método no permitido. Usa GET para verify-project-ownership.",
           });
         }
-        const { projectId, uid } = req.query;
+        const { projectId } = req.query;
+        const uid = req.query.uid || req.query.userId || req.query.userUid || req.query.useruid;
 
         const result = await verifyProjectOwnership(projectId, uid);
         res.setHeader(
@@ -167,7 +168,8 @@ module.exports = async function handler(req, res) {
           });
         }
         res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
-        const { projectId, uid, accessKey: bodyKey } = req.body;
+        const { projectId, accessKey: bodyKey } = req.body;
+        const uid = req.body.uid || req.body.userId || req.body.userUid || req.body.useruid;
         const headerKey = req.headers["authorization"];
         const accessKey = headerKey || bodyKey;
 
