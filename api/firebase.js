@@ -129,9 +129,9 @@ module.exports = async function handler(req, res) {
             error: "Método no permitido. Usa GET para get-my-projects.",
           });
         }
-        const { userId } = req.query;
+        const { uid } = req.query;
 
-        const projects = await fetchMyProjects(userId);
+        const projects = await fetchMyProjects(uid);
         res.setHeader(
           "Cache-Control",
           "public, max-age=10, s-maxage=60, stale-while-revalidate=600",
@@ -148,9 +148,9 @@ module.exports = async function handler(req, res) {
               "Método no permitido. Usa GET para verify-project-ownership.",
           });
         }
-        const { projectId, userId } = req.query;
+        const { projectId, uid } = req.query;
 
-        const result = await verifyProjectOwnership(projectId, userId);
+        const result = await verifyProjectOwnership(projectId, uid);
         res.setHeader(
           "Cache-Control",
           "public, max-age=10, s-maxage=60, stale-while-revalidate=600",
@@ -167,11 +167,11 @@ module.exports = async function handler(req, res) {
           });
         }
         res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
-        const { projectId, userId, accessKey: bodyKey } = req.body;
+        const { projectId, uid, accessKey: bodyKey } = req.body;
         const headerKey = req.headers["authorization"];
         const accessKey = headerKey || bodyKey;
 
-        const result = await claimProject(projectId, userId, accessKey);
+        const result = await claimProject(projectId, uid, accessKey);
         return res.status(200).json(result);
       }
 
