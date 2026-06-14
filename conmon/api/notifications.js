@@ -2,42 +2,31 @@ const { db, admin } = require("../config/firebase");
 
 async function pushNotification(data) {
   try {
-    const deviceDoc = await db.collection("devices").doc("admin_device").get();
-    const fcmToken = deviceDoc.data()?.fcmToken;
+    const devices = await db.collection("devices").get();
+    //iterar la lista y verifiacr el rol de cada dispositivo
+    for (const device of devices.docs) {
+      const fcmToken = device.id;
+      const role = device.data()?.role;
+      if (role !== 'admin') {
+        console.log("El dispositivo no es un admin.");
+        continue;
+      } else {
+        // 3. Construir la notificación usando las propiedades de tu objeto 'data'
+        const payload = {
+          token: fcmToken,
+          notification: {
+            title: data.title, // Ejemplo: "Nuevo: reparaciones"
+            body: data.body, // Muestra un fragmento del mensaje
+          },
+        };
 
-    if (!fcmToken) {
-      console.log("No hay un token FCM registrado para este dispositivo.");
-      return;
+        // 4. Enviar el disparo a FCM
+        const response = await admin.messaging().send(payload);
+        console.log("Notificación enviada con éxito. ID:", response);
+      }
     }
-    //formato de notificaciones:
-  //     AppNotification({
-  //   required super.createdAt,
-  //   required this.title,
-  //   required this.body,
-  //   this.payload,
-  //   required this.date,
-  //   required this.type,
-  //   this.read = false,
-  // });
-  
-    // 3. Construir la notificación usando las propiedades de tu objeto 'data'
-    const payload = {
-      token: fcmToken,
-      notification: {
-        title: data.title, // Ejemplo: "Nuevo: reparaciones"
-        body: data.body, // Muestra un fragmento del mensaje
-      },
-      // Datos extra en segundo plano para que Flutter los use si necesitas abrir una pantalla específica
-      // data: {
-      //   click_action: "FLUTTER_NOTIFICATION_CLICK",
-      //   ...data.payload,
-      //   type: data.type,
-      // },
-    };
 
-    // 4. Enviar el disparo a FCM
-    const response = await admin.messaging().send(payload);
-    console.log("Notificación enviada con éxito. ID:", response);
+
   } catch (error) {
     console.error("Error al procesar la notificación push:", error);
   }
