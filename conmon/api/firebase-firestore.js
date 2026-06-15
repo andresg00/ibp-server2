@@ -235,7 +235,7 @@ async function fetchMyProjects(uid) {
   // Buscamos los proyectos donde el campo uid sea igual al parámetro de consulta
   //verificar si el id esta en la lista de  dueños
   const snapshot = await db
-    .collection("projects")
+    .collection("project-members")
     .where("owners", "array-contains", uid)
     .get();
   const projects = [];
@@ -256,7 +256,7 @@ async function verifyProjectOwnership(projectId, uid) {
     throw new Error("MISSING_USER_ID");
   }
 
-  const doc = await db.collection("projects").doc(projectId).get();
+  const doc = await db.collection("project-members").doc(projectId).get();
   if (!doc.exists) {
     return { owned: false, message: "Project not found" };
   }
@@ -280,7 +280,7 @@ async function claimProject(projectId, uid, accessKey) {
     throw new Error("MISSING_USER_ID");
   }
 
-  const docRef = db.collection("projects").doc(projectId);
+  const docRef = db.collection("project-members").doc(projectId);
   const doc = await docRef.get();
   if (!doc.exists) {
     throw new Error("NOT_FOUND");
