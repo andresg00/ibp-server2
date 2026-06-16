@@ -22,7 +22,7 @@ app.use(
       if (allowedOrigins.indexOf(origin) !== -1 || origin.startsWith("http://localhost:")) {
         return callback(null, true);
       }
-      
+
       const msg = "La política de CORS para este sitio no permite acceso desde el origen especificado.";
       return callback(new Error(msg), false);
     },
@@ -53,10 +53,11 @@ const {
   getLastDocumentExpress,
   setDocumentExpress,
   setListExpress,
-  getMyProjectsExpress,
-  verifyProjectOwnershipExpress,
-  claimProjectExpress,
+
 } = require("./conmon/api/firebase-firestore"); // Importa la función directamente
+const { getMyProjectsExpress,
+  verifyProjectOwnershipExpress,
+  claimProjectExpress, } = require("./conmon/api/project-members");
 const getAlbumImages =
   require("./conmon/photos/phots-public-album").getAlbumImages; // Importa la función directamente
 const { getWeather } = require("./conmon/api/open_weather_map"); // Importa la función directamente

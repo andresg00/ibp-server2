@@ -3,13 +3,13 @@ const {
   fetchCollection,
   fetchFirstDocument,
   fetchLastDocument,
-  fetchMyProjects,
-  verifyProjectOwnership,
-  claimProject,
+
   setDocument,
   setList,
 } = require("../conmon/api/firebase-firestore");
-
+const { fetchMyProjects,
+  verifyProjectOwnership,
+  claimProject, } = require("../conmon/api/project-members");
 module.exports = async function handler(req, res) {
   // Manejo inmediato del preflight CORS (peticiones OPTIONS)
   if (req.method === "OPTIONS") {
