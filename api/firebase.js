@@ -39,7 +39,7 @@ module.exports = async function handler(req, res) {
         const document = await fetchDocument(path, normalizedKey);
         res.setHeader(
           "Cache-Control",
-          "public, max-age=10, s-maxage=60, stale-while-revalidate=600",
+          "no-store, no-cache, must-revalidate",
         );
         return res.status(200).json({ document });
       }
@@ -65,7 +65,7 @@ module.exports = async function handler(req, res) {
         );
         res.setHeader(
           "Cache-Control",
-          "public, max-age=10, s-maxage=60, stale-while-revalidate=600",
+          "no-store, no-cache, must-revalidate",
         );
         return res.status(200).json({ documents });
       }
@@ -91,7 +91,7 @@ module.exports = async function handler(req, res) {
         );
         res.setHeader(
           "Cache-Control",
-          "public, max-age=10, s-maxage=60, stale-while-revalidate=600",
+          "no-store, no-cache, must-revalidate",
         );
         return res.status(200).json({ document });
       }
@@ -117,7 +117,7 @@ module.exports = async function handler(req, res) {
         );
         res.setHeader(
           "Cache-Control",
-          "public, max-age=10, s-maxage=60, stale-while-revalidate=600",
+          "no-store, no-cache, must-revalidate",
         );
         return res.status(200).json({ document });
       }
@@ -135,7 +135,7 @@ module.exports = async function handler(req, res) {
         const projects = await fetchMyProjects(uid);
         res.setHeader(
           "Cache-Control",
-          "public, max-age=10, s-maxage=60, stale-while-revalidate=600",
+          "no-store, no-cache, must-revalidate",
         );
         return res.status(200).json({ projects });
       }
@@ -155,7 +155,7 @@ module.exports = async function handler(req, res) {
         const result = await verifyProjectOwnership(projectId, uid);
         res.setHeader(
           "Cache-Control",
-          "public, max-age=10, s-maxage=60, stale-while-revalidate=600",
+          "no-store, no-cache, must-revalidate",
         );
         return res.status(200).json(result);
       }

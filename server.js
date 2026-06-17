@@ -31,6 +31,13 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
+
+// Desactivar caché global para peticiones de la API
+app.use((req, res, next) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+  next();
+});
+
 // const uploadRoutes = require("./routes/upload");
 // const testUrlStream = require("./api/extract-metadata").testUrlStream;
 // getFromFirebase = require("./video-analizer").getFromFirebase;

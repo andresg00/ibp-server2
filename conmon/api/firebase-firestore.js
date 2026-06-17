@@ -107,10 +107,12 @@ async function fetchCollection(path, uid, filter, order) {
   snapshot.forEach((doc) => {
     documents.push({ id: doc.id, ...doc.data() });
   });
-  //devolver solo poryectos visbles en la web
-  const kWebVisible = 'webVisible';
-
-  return documents.filter((doc) => doc[kWebVisible]);
+  if (path == 'projects' || path == 'projects/') {
+    const webVisibleProjects = documents.filter((doc) => doc.webVisible === true);
+    //devolver solo poryectos visbles en la web
+    return webVisibleProjects;
+  }
+  return documents;
 }
 
 /**
