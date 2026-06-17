@@ -1,16 +1,42 @@
 const { db } = require("../config/firebase");
 const { pushNotification } = require("./notifications");
+const { verifyProjectOwnership } = require("./project-members");
 
 
 
-function validateAcces(path, uid) {
-  return true;
+async function validateAccess(path, uid) {
+  // Limpiamos slashes sobrantes
+  const cleanPath = path.replace(/^\/+|\/+$/g, '');
+  const parts = cleanPath.split('/');
+
+  if (parts[0] === 'projects') {
+
+    // CASO 1: Acceso a la lista completa ("projects") o a un proyecto específico ("projects/123")
+    // Si parts.length es 1 o 2, es contenido totalmente público.
+    if (parts.length <= 2) {
+      return true;
+    }
+
+    // CASO 2: Intentan acceder a subcolecciones profundas sin estar autenticados
+    if (!uid) {
+      return false; // Bloqueado. Cualquier subcolección requiere una cuenta válida
+    }
+
+    // CASO 3: Acceso a subcolecciones privadas (ej. "projects/123/finanzas")
+    // parts.length es mayor a 2, por lo que verificamos propiedad en el servidor
+    if (parts.length > 2) {
+      const projectId = parts[1];
+      return await verifyProjectOwnership(projectId, uid);
+    }
+  }
+
+  return false;
 }
 /**
  * Lógica pura para obtener un documento de Firestore.
  */
 async function fetchDocument(path, accessKey) {
-  if (!validateAcces(path, accessKey)) {
+  if (!(await validateAccess(path, accessKey))) {
     throw new Error("UNAUTHORIZED");
   }
   if (!path) {
@@ -29,7 +55,7 @@ async function fetchDocument(path, accessKey) {
  * Lógica pura para obtener una colección/lista de Firestore con filtros y ordenamientos dinámicos.
  */
 async function fetchCollection(path, accessKey, filter, order) {
-  if (!validateAcces(path, accessKey)) {
+  if (!(await validateAccess(path, accessKey))) {
     throw new Error("UNAUTHORIZED");
   }
   if (!path) {
@@ -39,6 +65,7 @@ async function fetchCollection(path, accessKey, filter, order) {
   let queryRef = db.collection(path);
 
   // Aplicar filtros dinámicos (enviados como JSON stringificado desde Angular/Vite)
+
   if (filter) {
     let parsedFilter;
     try {
@@ -82,14 +109,17 @@ async function fetchCollection(path, accessKey, filter, order) {
   snapshot.forEach((doc) => {
     documents.push({ id: doc.id, ...doc.data() });
   });
-  return documents;
+  //devolver solo poryectos visbles en la web
+  const kWebVisible = 'webVisible';
+
+  return documents.filter((doc) => doc[kWebVisible]);
 }
 
 /**
  * Lógica pura para obtener el primer documento de Firestore basado en filtros y ordenamiento.
  */
 async function fetchFirstDocument(path, accessKey, filter, order) {
-  if (!validateAcces(path, accessKey)) {
+  if (!(await validateAccess(path, accessKey))) {
     throw new Error("UNAUTHORIZED");
   }
   if (!path) {
@@ -152,7 +182,7 @@ async function fetchFirstDocument(path, accessKey, filter, order) {
  * Lógica pura para obtener el último documento de Firestore basado en filtros y ordenamiento.
  */
 async function fetchLastDocument(path, accessKey, filter, order) {
-  if (!validateAcces(path, accessKey)) {
+  if (!(await validateAccess(path, accessKey))) {
     throw new Error("UNAUTHORIZED");
   }
   if (!path) {
@@ -217,7 +247,7 @@ async function fetchLastDocument(path, accessKey, filter, order) {
  * Lógica pura para escribir/actualizar un documento en Firestore.
  */
 async function setDocument(path, data, accessKey) {
-  if (!validateAcces(path, accessKey)) {
+  if (!(await validateAccess(path, accessKey))) {
     throw new Error("UNAUTHORIZED");
   }
   if (!path) {
@@ -256,7 +286,7 @@ async function setDocument(path, data, accessKey) {
  * Lógica pura para realizar escritura en lote (batch set) de una lista de documentos.
  */
 async function setList(path, list, accessKey) {
-  if (!validateAcces(path, accessKey)) {
+  if (!(await validateAccess(path, accessKey))) {
     throw new Error("UNAUTHORIZED");
   }
   if (!path) {

@@ -9,7 +9,8 @@ const {
 } = require("../conmon/api/firebase-firestore");
 const { fetchMyProjects,
   verifyProjectOwnership,
-  claimProject, } = require("../conmon/api/project-members");
+  claimProject,
+  unclaimProject, } = require("../conmon/api/project-members");
 module.exports = async function handler(req, res) {
   // Manejo inmediato del preflight CORS (peticiones OPTIONS)
   if (req.method === "OPTIONS") {
@@ -174,6 +175,22 @@ module.exports = async function handler(req, res) {
         const accessKey = headerKey || bodyKey;
 
         const result = await claimProject(projectId, uid, accessKey);
+        return res.status(200).json(result);
+      }
+
+      case "unclaim-project": {
+        if (req.method !== "POST") {
+          res.setHeader("Allow", ["POST"]);
+          res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+          return res.status(405).json({
+            error: "Método no permitido. Usa POST para unclaim-project.",
+          });
+        }
+        res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+        const projectId = req.body?.projectId;
+        const uid = req.body?.uid || req.body?.userId || req.body?.userUid || req.body?.useruid;
+
+        const result = await unclaimProject(projectId, uid);
         return res.status(200).json(result);
       }
 

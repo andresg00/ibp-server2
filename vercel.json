@@ -50,6 +50,10 @@
       "destination": "/api/firebase?route=claim-project"
     },
     {
+      "source": "/api/unclaim-project",
+      "destination": "/api/firebase?route=unclaim-project"
+    },
+    {
       "source": "/api/set-document",
       "destination": "/api/firebase?route=set-document"
     },

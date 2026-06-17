@@ -57,7 +57,8 @@ const {
 } = require("./conmon/api/firebase-firestore"); // Importa la función directamente
 const { getMyProjectsExpress,
   verifyProjectOwnershipExpress,
-  claimProjectExpress, } = require("./conmon/api/project-members");
+  claimProjectExpress,
+  unclaimProjectExpress, } = require("./conmon/api/project-members");
 const getAlbumImages =
   require("./conmon/photos/phots-public-album").getAlbumImages; // Importa la función directamente
 const { getWeather } = require("./conmon/api/open_weather_map"); // Importa la función directamente
@@ -78,6 +79,7 @@ app.get("/api/get-last-document", getLastDocumentExpress);
 app.get("/api/get-my-projects", getMyProjectsExpress);
 app.get("/api/verify-project-ownership", verifyProjectOwnershipExpress);
 app.post("/api/claim-project", claimProjectExpress);
+app.post("/api/unclaim-project", unclaimProjectExpress);
 app.post("/api/set-document", setDocumentExpress);
 app.post("/api/set-list", setListExpress);
 app.post("/api/ai-description", getDescription);
