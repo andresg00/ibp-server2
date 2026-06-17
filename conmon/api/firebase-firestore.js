@@ -2,8 +2,6 @@ const { db } = require("../config/firebase");
 const { pushNotification } = require("./notifications");
 const { verifyProjectOwnership } = require("./project-members");
 
-
-
 async function validateAccess(path, uid) {
   // Limpiamos slashes sobrantes
   const cleanPath = path.replace(/^\/+|\/+$/g, '');
@@ -35,8 +33,8 @@ async function validateAccess(path, uid) {
 /**
  * Lógica pura para obtener un documento de Firestore.
  */
-async function fetchDocument(path, accessKey) {
-  if (!(await validateAccess(path, accessKey))) {
+async function fetchDocument(path, uid) {
+  if (!(await validateAccess(path, uid))) {
     throw new Error("UNAUTHORIZED");
   }
   if (!path) {
@@ -54,8 +52,8 @@ async function fetchDocument(path, accessKey) {
 /**
  * Lógica pura para obtener una colección/lista de Firestore con filtros y ordenamientos dinámicos.
  */
-async function fetchCollection(path, accessKey, filter, order) {
-  if (!(await validateAccess(path, accessKey))) {
+async function fetchCollection(path, uid, filter, order) {
+  if (!(await validateAccess(path, uid))) {
     throw new Error("UNAUTHORIZED");
   }
   if (!path) {
@@ -118,8 +116,8 @@ async function fetchCollection(path, accessKey, filter, order) {
 /**
  * Lógica pura para obtener el primer documento de Firestore basado en filtros y ordenamiento.
  */
-async function fetchFirstDocument(path, accessKey, filter, order) {
-  if (!(await validateAccess(path, accessKey))) {
+async function fetchFirstDocument(path, uid, filter, order) {
+  if (!(await validateAccess(path, uid))) {
     throw new Error("UNAUTHORIZED");
   }
   if (!path) {
@@ -181,8 +179,8 @@ async function fetchFirstDocument(path, accessKey, filter, order) {
 /**
  * Lógica pura para obtener el último documento de Firestore basado en filtros y ordenamiento.
  */
-async function fetchLastDocument(path, accessKey, filter, order) {
-  if (!(await validateAccess(path, accessKey))) {
+async function fetchLastDocument(path, uid, filter, order) {
+  if (!(await validateAccess(path, uid))) {
     throw new Error("UNAUTHORIZED");
   }
   if (!path) {
@@ -246,8 +244,8 @@ async function fetchLastDocument(path, accessKey, filter, order) {
 /**
  * Lógica pura para escribir/actualizar un documento en Firestore.
  */
-async function setDocument(path, data, accessKey) {
-  if (!(await validateAccess(path, accessKey))) {
+async function setDocument(path, data, uid) {
+  if (!(await validateAccess(path, uid))) {
     throw new Error("UNAUTHORIZED");
   }
   if (!path) {
@@ -285,8 +283,8 @@ async function setDocument(path, data, accessKey) {
 /**
  * Lógica pura para realizar escritura en lote (batch set) de una lista de documentos.
  */
-async function setList(path, list, accessKey) {
-  if (!(await validateAccess(path, accessKey))) {
+async function setList(path, list, uid) {
+  if (!(await validateAccess(path, uid))) {
     throw new Error("UNAUTHORIZED");
   }
   if (!path) {
@@ -323,12 +321,12 @@ const getDocumentExpress = async (req, res) => {
   }
 
   const path = req.query?.path;
-  const accessKey = req.headers["authorization"];
-  const normalizedKey =
-    accessKey === "undefined" || accessKey === "" ? undefined : accessKey;
+  const uid = req.headers["authorization"];
+  const normalizedUid =
+    uid === "undefined" || uid === "" ? undefined : uid;
 
   try {
-    const document = await fetchDocument(path, normalizedKey);
+    const document = await fetchDocument(path, normalizedUid);
     return res.status(200).json({ document });
   } catch (error) {
     if (error.message === "UNAUTHORIZED") {
