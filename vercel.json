@@ -90,6 +90,10 @@
       "destination": "/api/weather"
     },
     {
+      "source": "/api/get-weather-history",
+      "destination": "/api/weather-history"
+    },
+    {
       "source": "/api/ai-description",
       "destination": "/api/ai?route=description"
     },
