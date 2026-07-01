@@ -61,22 +61,23 @@ function validarTimestamp(dt) {
 }
 
 /**
- * Transforma los datos del clima actual al formato requerido.
- * @param {Object} data - Datos del API de OpenWeather
+ * Transforma los datos del clima actual de One Call 4.0 al formato requerido.
+ * @param {Object} data - Datos del API One Call 4.0 Current
  * @returns {Object} Datos formateados
  */
 function climaJson(data) {
+  const item = data.data?.[0] || {};
   return {
-    temperatura: data.main?.temp,
-    humedad: data.main?.humidity,
-    descripcion: data.weather?.[0]?.description || "Sin descripción",
-    vientoVelocidad: data.wind?.speed,
+    temperatura: item.temp,
+    humedad: item.humidity,
+    descripcion: item.weather?.[0]?.description || "Sin descripción",
+    vientoVelocidad: item.wind_speed,
   };
 }
 
 /**
- * Transforma los datos del clima histórico al formato requerido.
- * @param {Object} data - Datos del API One Call 3.0 Time Machine
+ * Transforma los datos del clima histórico de One Call 4.0 al formato requerido.
+ * @param {Object} data - Datos del API One Call 4.0 Hourly Timeline
  * @returns {Object} Datos formateados
  */
 function climaHistoricoJson(data) {
@@ -93,43 +94,54 @@ function climaHistoricoJson(data) {
 }
 
 /**
- * Obtiene datos del clima de una API pública por nombre de ciudad.
+ * Obtiene las coordenadas de una ciudad por su nombre utilizando la API de Geocoding.
  * @param {string} city - Nombre de la ciudad
- * @returns {Promise<Object>} Datos del clima actual
+ * @returns {Promise<{lat: number, lon: number}>} Coordenadas de la ciudad
  */
-async function obtenerClima(city) {
+async function obtenerCoordenadasPorCiudad(city) {
   verificarApiKey();
-
   if (!city || typeof city !== "string" || city.trim() === "") {
     throw new Error("El nombre de la ciudad es requerido y debe ser un texto válido.");
   }
 
   const queryParams = new URLSearchParams({
     q: city.trim(),
-    appid: API_KEY,
-    lang: "es",
-    units: "metric"
+    limit: "1",
+    appid: API_KEY
   });
 
-  const url = new URL("https://api.openweathermap.org/data/2.5/weather");
+  const url = new URL("https://api.openweathermap.org/geo/1.0/direct");
   url.search = queryParams.toString();
 
   try {
     const response = await fetch(url.href);
-
     if (!response.ok) {
-      throw new Error(`Error en la llamada a OpenWeather: ${response.statusText}`);
+      throw new Error(`Error en la llamada de geolocalización: ${response.statusText}`);
     }
 
     const data = await response.json();
-    return climaJson(data);
+    if (!Array.isArray(data) || data.length === 0) {
+      throw new Error(`No se encontraron coordenadas para la ciudad '${city}'.`);
+    }
+
+    return { lat: data[0].lat, lon: data[0].lon };
   } catch (error) {
-    throw new Error(`Error al obtener datos del clima: ${error.message}`);
+    throw new Error(`Error al geolocalizar la ciudad: ${error.message}`);
   }
 }
 
 /**
- * Obtiene datos del clima usando coordenadas de latitud y longitud.
+ * Obtiene datos del clima actual por nombre de ciudad resolviendo primero sus coordenadas.
+ * @param {string} city - Nombre de la ciudad
+ * @returns {Promise<Object>} Datos del clima actual
+ */
+async function obtenerClima(city) {
+  const coords = await obtenerCoordenadasPorCiudad(city);
+  return obtenerClimaPorUbicacion(coords.lat, coords.lon);
+}
+
+/**
+ * Obtiene datos del clima actual usando coordenadas a través de One Call 4.0.
  * @param {number|string} lat - Latitud
  * @param {number|string} lon - Longitud
  * @returns {Promise<Object>} Datos del clima actual
@@ -146,14 +158,14 @@ async function obtenerClimaPorUbicacion(lat, lon) {
     units: "metric"
   });
 
-  const url = new URL("https://api.openweathermap.org/data/2.5/weather");
+  const url = new URL("https://api.openweathermap.org/data/4.0/onecall/current");
   url.search = queryParams.toString();
 
   try {
     const response = await fetch(url.href);
 
     if (!response.ok) {
-      throw new Error(`Error en la llamada a OpenWeather: ${response.statusText}`);
+      throw new Error(`Error en la llamada a One Call Current: ${response.statusText}`);
     }
 
     const data = await response.json();
@@ -164,7 +176,7 @@ async function obtenerClimaPorUbicacion(lat, lon) {
 }
 
 /**
- * Obtiene datos históricos del clima usando coordenadas y un timestamp de Unix.
+ * Obtiene datos históricos del clima usando coordenadas y un timestamp de Unix mediante One Call 4.0.
  * @param {number|string} lat - Latitud
  * @param {number|string} lon - Longitud
  * @param {number|string} dt - Timestamp Unix (en segundos o milisegundos)
@@ -178,20 +190,20 @@ async function obtenerClimaHistorico(lat, lon, dt) {
   const queryParams = new URLSearchParams({
     lat: coords.lat.toString(),
     lon: coords.lon.toString(),
-    dt: parsedDt.toString(),
+    start: parsedDt.toString(),
     appid: API_KEY,
     lang: "es",
     units: "metric"
   });
 
-  const url = new URL("https://api.openweathermap.org/data/3.0/onecall/timemachine");
+  const url = new URL("https://api.openweathermap.org/data/4.0/onecall/timeline/1h");
   url.search = queryParams.toString();
 
   try {
     const response = await fetch(url.href);
 
     if (!response.ok) {
-      throw new Error(`Error en la llamada a OpenWeather Time Machine: ${response.statusText}`);
+      throw new Error(`Error en la llamada a One Call Timeline: ${response.statusText}`);
     }
 
     const data = await response.json();
