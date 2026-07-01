@@ -7,6 +7,20 @@ async function validateAccess(path, uid) {
   const cleanPath = path.replace(/^\/+|\/+$/g, '');
   const parts = cleanPath.split('/');
 
+  if (parts[0] === 'users') {
+    // Un usuario solo puede acceder a su propio documento de usuario
+    if (parts.length === 2 && uid && parts[1] === uid) {
+      return true;
+    }
+  }
+
+  if (parts[0] === 'applications') {
+    // Un usuario solo puede acceder a su propia postulación (applications/UID)
+    if (parts.length === 2 && uid && parts[1] === uid) {
+      return true;
+    }
+  }
+
   if (parts[0] === 'projects') {
 
     // CASO 1: Acceso a la lista completa ("projects") o a un proyecto específico ("projects/123")

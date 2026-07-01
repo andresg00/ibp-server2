@@ -57,7 +57,7 @@ const register = async (req, res) => {
     return res.status(405).json({ error: "Método no permitido. Usa POST." });
   }
 
-  const { nombre, idToken } = req.body || {};
+  const { nombre, idToken, telefono, intencion } = req.body || {};
   if (!idToken) {
     return res.status(400).json({ error: "Falta el idToken en el cuerpo de la petición." });
   }
@@ -73,6 +73,9 @@ const register = async (req, res) => {
       nombre: finalNombre,
       email,
       uid,
+      telefono: telefono || "",
+      intencion: intencion || "",
+      postulacionStatus: "",
       updatedAt: new Date().toISOString()
     }, { merge: true });
 
@@ -95,7 +98,7 @@ const register = async (req, res) => {
     // 5. Respond
     return res.status(201).json({
       status: "success",
-      user: { uid, email, nombre: finalNombre }
+      user: { uid, email, nombre: finalNombre, telefono: telefono || "", intencion: intencion || "", postulacionStatus: "" }
     });
   } catch (error) {
     console.error("Error en registro de usuario:", error);
@@ -150,10 +153,17 @@ const login = async (req, res) => {
 
     // 5. Retrieve name from Firestore
     let finalNombre = decodedToken.name || "";
+    let finalTelefono = "";
+    let finalIntencion = "";
+    let finalPostulacionStatus = "";
     try {
       const userDoc = await db.collection("users").doc(uid).get();
       if (userDoc.exists) {
-        finalNombre = userDoc.data().nombre || finalNombre;
+        const userData = userDoc.data();
+        finalNombre = userData.nombre || finalNombre;
+        finalTelefono = userData.telefono || "";
+        finalIntencion = userData.intencion || "";
+        finalPostulacionStatus = userData.postulacionStatus || "";
       }
     } catch (dbErr) {
       console.warn("Error retrieving user from firestore:", dbErr.message);
@@ -162,7 +172,7 @@ const login = async (req, res) => {
     // 6. Respond
     return res.status(200).json({
       status: "success",
-      user: { uid, email, nombre: finalNombre }
+      user: { uid, email, nombre: finalNombre, telefono: finalTelefono, intencion: finalIntencion, postulacionStatus: finalPostulacionStatus }
     });
   } catch (error) {
     console.error("Error en inicio de sesión:", error);

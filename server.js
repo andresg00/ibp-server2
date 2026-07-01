@@ -70,12 +70,14 @@ const getAlbumImages =
   require("./conmon/photos/phots-public-album").getAlbumImages; // Importa la función directamente
 const { getWeather, getWeatherHistory } = require("./conmon/api/open_weather_map"); // Importa la función directamente
 const { register, login, logout } = require("./conmon/api/auth");
+const { applyJob } = require("./conmon/api/apply");
 
 app.post("/api/get-weather", getWeather);
 app.post("/api/get-weather-history", getWeatherHistory);
 app.post("/api/register", register);
 app.post("/api/login", login);
 app.post("/api/logout", logout);
+app.post("/api/apply", applyJob);
 app.post("/api/get-album-images", getAlbumImages);
 app.post("/api/generate-upload-url", generateUploadUrl);
 app.post("/api/delete-file", deleteFile);
