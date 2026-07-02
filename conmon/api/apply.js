@@ -97,4 +97,55 @@ const applyJob = async (req, res) => {
   }
 };
 
-module.exports = { applyJob };
+const simulateAdminResponse = async (req, res) => {
+  handleCORS(req, res);
+  
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
+  if (req.method !== "POST") {
+    res.setHeader("Allow", ["POST"]);
+    return res.status(405).json({ error: "Método no permitido. Usa POST." });
+  }
+
+  const { uid, status } = req.body || {};
+  if (!uid || status === undefined) {
+    return res.status(400).json({ error: "Faltan parámetros requeridos: uid y status." });
+  }
+
+  try {
+    const userRef = db.collection("users").doc(uid);
+    const appRef = db.collection("applications").doc(uid);
+
+    const userDoc = await userRef.get();
+    if (!userDoc.exists) {
+      return res.status(404).json({ error: "Usuario no encontrado." });
+    }
+
+    await db.runTransaction(async (transaction) => {
+      transaction.update(userRef, {
+        postulacionStatus: status,
+        updatedAt: new Date().toISOString()
+      });
+      
+      // Si existe documento de postulación, actualizar su status también
+      const appDoc = await transaction.get(appRef);
+      if (appDoc.exists) {
+        transaction.update(appRef, {
+          status: status
+        });
+      }
+    });
+
+    return res.status(200).json({
+      status: "success",
+      message: `Estado de postulación simulado para el usuario ${uid} actualizado a '${status}' con éxito.`
+    });
+  } catch (error) {
+    console.error("Error al simular respuesta del administrador:", error);
+    return res.status(500).json({ error: "Error al simular la respuesta en el servidor." });
+  }
+};
+
+module.exports = { applyJob, simulateAdminResponse };

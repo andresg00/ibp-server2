@@ -32,11 +32,15 @@ const reformulate = async (req, res) => {
       model: MODEL_NAME,
       contents: prompt,
     });
-    
-    // En el nuevo SDK la propiedad es .text directo (no función)
-    const output = response.text.trim();
 
-    res.status(200).json({ result: output });
+
+    // 6. Limpieza final redundante de caracteres Markdown residuales
+    let cleanText = response.text.replace(/[\*#\[\]]/g, "").trim();
+
+    // 7. Humanizar el texto
+    cleanText = await humanizar(cleanText);
+
+    res.status(200).json({ result: cleanText });
   } catch (error) {
     console.error("Error en reformulate:", error.message);
 
@@ -77,9 +81,11 @@ const execute = async (req, res) => {
     });
 
     let cleanText = response.text
-      .replace(/\*\*/g, "") 
-      .replace(/\*/g, "") 
+      .replace(/\*\*/g, "")
+      .replace(/\*/g, "")
       .trim();
+    // humanizar el texto
+    cleanText = await humanizar(cleanText);
 
     res.status(200).json({ result: cleanText });
   } catch (error) {
@@ -111,7 +117,7 @@ const getDescription = async (req, res) => {
         .collection("media")
         .where(FieldPath.documentId(), "in", ids)
         .get();
-      
+
       images = snapshot.docs
         .map(doc => doc.data().thumbs400)
         .filter(url => url !== undefined && url !== null);
@@ -127,10 +133,10 @@ const getDescription = async (req, res) => {
       try {
         const response = await fetch(url);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        
+
         const arrayBuffer = await response.arrayBuffer();
         const base64Data = Buffer.from(arrayBuffer).toString('base64');
-        
+
         let mimeType = 'image/jpeg';
         if (url.toLowerCase().includes('.png')) mimeType = 'image/png';
         if (url.toLowerCase().includes('.webp')) mimeType = 'image/webp';
@@ -179,6 +185,9 @@ const getDescription = async (req, res) => {
     // 6. Limpieza final redundante de caracteres Markdown residuales
     let cleanText = response.text.replace(/[\*#\[\]]/g, "").trim();
 
+    // 7. Humanizar el texto
+    cleanText = await humanizar(cleanText);
+
     res.status(200).json({ result: cleanText });
 
   } catch (error) {
@@ -186,5 +195,35 @@ const getDescription = async (req, res) => {
     res.status(500).json({ error: "Error interno al procesar la descripción de imágenes." });
   }
 };
+//humanizar el texto
+async function humanizar(text) {
+  const prompt = `Actúa como un redactor técnico experto y un comunicador profesional. Tengo un texto técnico generado por IA que suena demasiado robótico, rígido y predecible. Necesito que lo reescribas para "humanizarlo", aplicando los siguientes criterios obligatorios:
 
-module.exports = { getDescription, execute, reformulate };
+1. Fluidez y Naturalidad: Utiliza un lenguaje más cercano, directo y orgánico. Evita transiciones mecánicas cliché de las IA (como "En resumen", "Por lo tanto", "Es crucial recordar", "En este sentido").
+2. Preservación Técnica: Conserva intactos todos los términos técnicos, siglas, métricas, nombres de procesos, metodologías y la precisión conceptual del texto original. No simplifiques el fondo del mensaje.
+3. Ritmo Humano: Varía la longitud de las oraciones. Combina frases cortas e impactantes con oraciones más largas y fluidas para que la lectura tenga un ritmo natural.
+4. Voz Activa: Prioriza la voz activa sobre la pasiva para dar más fuerza, claridad y dinamismo al texto.
+5. Tono: Mantén un tono profesional, serio y corporativo, pero como si fuera escrito por un ingeniero o especialista humano con años de experiencia, no por una máquina.
+
+Por favor, reescribe el siguiente texto aplicando estas reglas:
+
+${text}`
+  try {
+    const response = await ai.models.generateContent({
+      model: MODEL_NAME,
+      contents: prompt,
+    });
+
+    let cleanText = response.text
+      .replace(/\*\*/g, "")
+      .replace(/\*/g, "")
+      .trim();
+
+    return cleanText;
+  } catch (error) {
+    console.error("Error en execute:", error.message);
+    return null;
+  }
+}
+
+module.exports = { getDescription, execute, reformulate, humanizar };
