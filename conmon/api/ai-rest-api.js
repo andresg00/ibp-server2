@@ -206,6 +206,12 @@ async function humanizar(text) {
 5. Tono: Mantén un tono profesional, serio y corporativo, pero como si fuera escrito por un ingeniero o especialista humano con años de experiencia, no por una máquina.
 
 Por favor, reescribe el siguiente texto aplicando estas reglas:
+ REGLAS DE FORMATO:
+    - NO uses negritas (asteriscos como **texto**).
+    - NO uses Markdown.
+    - NO uses listas con símbolos extraños.
+    - Escribe en párrafos limpios o listas numeradas simples (1., 2., 3.).
+    - La respuesta debe ser texto plano fluido.
 
 ${text}`
   try {
@@ -226,4 +232,4 @@ ${text}`
   }
 }
 
-module.exports = { getDescription, execute, reformulate, humanizar };
+module.exports = { getDescription, execute, reformulate };
