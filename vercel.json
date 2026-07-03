@@ -106,6 +106,14 @@
       "destination": "/api/ai?route=reformulate"
     },
     {
+      "source": "/api/apply",
+      "destination": "/api/apply?route=apply"
+    },
+    {
+      "source": "/api/admin/simulate-response",
+      "destination": "/api/apply?route=simulate-response"
+    },
+    {
       "source": "/api/register",
       "destination": "/api/auth?route=register"
     },
