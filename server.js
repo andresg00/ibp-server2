@@ -38,9 +38,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// const uploadRoutes = require("./routes/upload");
-// const testUrlStream = require("./api/extract-metadata").testUrlStream;
-// getFromFirebase = require("./video-analizer").getFromFirebase;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -110,7 +107,4 @@ app.get("/", (req, res) => res.send("Servidor funcionando 🚀"));
 app.get(["/favicon.ico", "/favicon.png"], (req, res) => {
   res.status(204).end(); // No Content, sin warning
 });
-// compressExistingImages();
-// repairEventPhotos();
-// refreshExpiredMediaUrls("media");
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));

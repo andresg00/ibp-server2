@@ -1,6 +1,6 @@
 const { bucket } = require("../config/firebase");
 const { existMedia } = require("../api/firestore-media");
-const { processFile, processDeleteFile } = require("./procses-media");
+const { processDeleteFile } = require("./procses-media");
 // --- Configuración de Firebase Admin ---
 // Leemos las credenciales desde las variables de entorno de Vercel
 
@@ -43,7 +43,6 @@ const generateUploadUrl = async (req, res) => {
     const [exists] = await file.exists();
     if (exists) {
       await processDeleteFile(file);
-      // await processFile(file);
       // const doc = await existMedia(hash);
       // const data = doc.data();
       // data.id = doc.id;

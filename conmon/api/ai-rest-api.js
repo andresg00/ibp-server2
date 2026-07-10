@@ -212,8 +212,8 @@ Por favor, reescribe el siguiente texto aplicando estas reglas:
     - NO uses listas con símbolos extraños.
     - Escribe en párrafos limpios o listas numeradas simples (1., 2., 3.).
     - La respuesta debe ser texto plano fluido.
+Texto: "${text}"`;
 
-${text}`
   try {
     const response = await ai.models.generateContent({
       model: MODEL_NAME,
