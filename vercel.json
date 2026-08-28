@@ -114,6 +114,10 @@
       "destination": "/api/apply?route=simulate-response"
     },
     {
+      "source": "/api/reviews",
+      "destination": "/api/reviews"
+    },
+    {
       "source": "/api/register",
       "destination": "/api/auth?route=register"
     },

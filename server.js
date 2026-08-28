@@ -68,6 +68,7 @@ const getAlbumImages =
 const { getWeather, getWeatherHistory } = require("./conmon/api/open_weather_map"); // Importa la función directamente
 const { register, login, logout } = require("./conmon/api/auth");
 const { applyJob, simulateAdminResponse } = require("./conmon/api/apply");
+const { getReviews } = require("./conmon/api/reviews");
 
 app.post("/api/get-weather", getWeather);
 app.post("/api/get-weather-history", getWeatherHistory);
@@ -76,6 +77,7 @@ app.post("/api/login", login);
 app.post("/api/logout", logout);
 app.post("/api/apply", applyJob);
 app.post("/api/admin/simulate-response", simulateAdminResponse);
+app.get("/api/reviews", getReviews);
 app.post("/api/get-album-images", getAlbumImages);
 app.post("/api/generate-upload-url", generateUploadUrl);
 app.post("/api/delete-file", deleteFile);
