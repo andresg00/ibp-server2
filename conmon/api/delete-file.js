@@ -1,5 +1,6 @@
 const { existMedia } = require("./firestore-media");
 const { bucket } = require("../config/firebase");
+
 // Eliminar archivo de forma segura
 const deleteFile = async (req, res) => {
   // Solo permitimos peticiones POST
@@ -8,36 +9,56 @@ const deleteFile = async (req, res) => {
   }
 
   try {
-    // Recibimos el hash y ext del cliente
-    const { id } = req.body;
+    // Recibimos el hash, ext y/o name del cliente
+    const { id, ext: bodyExt, name: bodyName } = req.body;
 
-    if (!id) {
+    if (!id && !bodyName) {
       return res
         .status(400)
-        .json({ error: 'Faltan los campos requeridos: "id".' });
+        .json({ error: 'Faltan los campos requeridos: "id" o "name".' });
     }
 
-    // Verificamos si el archivo existe
-    const doc = await existMedia(id);
-    if (!doc.exists) {
-      return res.status(404).json({ error: "El archivo no existe." });
+    let ext = bodyExt;
+    const doc = id ? await existMedia(id) : { exists: false };
+
+    if (doc.exists) {
+      const data = doc.data();
+      ext = data.ext || ext;
     }
-    const data = doc.data();
-    const ext = data.ext;
-    const filePathInStorage = `uploads/${id}.${ext}`;
+
+    // Determinar la ruta exacta en Storage
+    let filePathInStorage = bodyName;
+    if (!filePathInStorage) {
+      if (ext) {
+        filePathInStorage = `uploads/${id}.${ext}`;
+      } else {
+        filePathInStorage = `uploads/${id}.jpg`;
+      }
+    }
+
     const file = bucket.file(filePathInStorage);
     try {
-      // Eliminamos el archivo
-      await file.delete();
-      console.log("Archivo eliminado:", filePathInStorage);
+      // Eliminamos el archivo físico original de Storage
+      await file.delete({ ignoreNotFound: true });
+      console.log("Archivo eliminado de Storage:", filePathInStorage);
+
+      // Si tenemos el hash, eliminar también posibles miniaturas residuales
+      const hash = id || filePathInStorage.split("/").pop().split(".")[0];
+      if (hash) {
+        await bucket.file(`uploads/thumbnails-x400/${hash}.png`).delete({ ignoreNotFound: true }).catch(() => {});
+        await bucket.file(`uploads/thumbnails-x800/${hash}.png`).delete({ ignoreNotFound: true }).catch(() => {});
+        await bucket.file(`uploads/video-images/${hash}.png`).delete({ ignoreNotFound: true }).catch(() => {});
+      }
     } catch (ex) {
-      console.error("Error eliminando el archivo del almacenamiento (posiblemente no existía en Storage):", ex.message);
-      console.log("Eliminando referencia en Firestore.");
-      await doc.ref.delete();
-      return res.status(200).json({ message: "Registro eliminado de Firestore." });
+      console.error("Aviso al eliminar archivo de Storage:", ex.message);
     }
 
-    res.status(200).json({ message: "Archivo eliminado correctamente." });
+    // Si el documento existía en Firestore, eliminarlo
+    if (doc.exists) {
+      await doc.ref.delete().catch(() => {});
+    }
+
+    res.status(200).json({ message: "Archivo y referencias eliminados correctamente." });
   } catch (error) {
     console.error("Error eliminando el archivo:", error);
     res.status(500).json({ error: "No se pudo eliminar el archivo." });
