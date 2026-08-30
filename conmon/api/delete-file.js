@@ -61,7 +61,7 @@ const deleteFile = async (req, res) => {
     res.status(200).json({ message: "Archivo y referencias eliminados correctamente." });
   } catch (error) {
     console.error("Error eliminando el archivo:", error);
-    res.status(500).json({ error: "No se pudo eliminar el archivo." });
+    res.status(500).json({ error: error.message || String(error) });
   }
 };
 
