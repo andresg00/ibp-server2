@@ -31,10 +31,10 @@ const deleteFile = async (req, res) => {
       await file.delete();
       console.log("Archivo eliminado:", filePathInStorage);
     } catch (ex) {
-      console.error("Error eliminando el archivo del almacenamiento.");
+      console.error("Error eliminando el archivo del almacenamiento (posiblemente no existía en Storage):", ex.message);
       console.log("Eliminando referencia en Firestore.");
-      doc.ref.delete();
-      return res;
+      await doc.ref.delete();
+      return res.status(200).json({ message: "Registro eliminado de Firestore." });
     }
 
     res.status(200).json({ message: "Archivo eliminado correctamente." });
