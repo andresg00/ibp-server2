@@ -207,12 +207,15 @@ async function humanizar(text) {
 5. Tono: Mantén un tono profesional, serio y corporativo, pero como si fuera escrito por un ingeniero o especialista humano con años de experiencia, no por una máquina.
 
 Por favor, reescribe el siguiente texto aplicando estas reglas:
+1. Devuelve ÚNICAMENTE el texto reformulado.
+2. No inventes, ni agreges o quites nada, develve unicamnete el mismo texto que recibiste aplicando las reglas mencionadas
  REGLAS DE FORMATO:
     - NO uses negritas (asteriscos como **texto**).
     - NO uses Markdown.
     - NO uses listas con símbolos extraños.
     - Escribe en párrafos limpios o listas numeradas simples (1., 2., 3.).
     - La respuesta debe ser texto plano fluido.
+    - No
 Texto: "${text}"`;
 
   try {
