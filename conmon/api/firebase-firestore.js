@@ -42,6 +42,13 @@ async function validateAccess(path, uid) {
     }
   }
 
+  if (parts[0] === 'lotes-v2' || parts[0] === 'proyectos-modulares-v2') {
+    // Acceso a la lista completa o documento individual
+    if (parts.length <= 2) {
+      return true;
+    }
+  }
+
   return false;
 }
 /**
@@ -60,7 +67,11 @@ async function fetchDocument(path, uid) {
   if (!doc.exists) {
     throw new Error("NOT_FOUND");
   }
-  return { id: doc.id, ...doc.data() };
+  const data = { id: doc.id, ...doc.data() };
+  if (path.startsWith('lotes-v2')) {
+    delete data.ownerPrice; // Privacidad de rentabilidad
+  }
+  return data;
 }
 
 /**
@@ -125,6 +136,12 @@ async function fetchCollection(path, uid, filter, order) {
     const webVisibleProjects = documents.filter((doc) => doc.webVisible === true);
     //devolver solo poryectos visbles en la web
     return webVisibleProjects;
+  }
+  if (path == 'lotes-v2' || path == 'lotes-v2/') {
+    return documents.map((doc) => {
+      const { ownerPrice, ...safeDoc } = doc;
+      return safeDoc;
+    });
   }
   return documents;
 }
