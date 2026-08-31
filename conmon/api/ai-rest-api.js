@@ -18,15 +18,16 @@ const reformulate = async (req, res) => {
       return res.status(400).json({ error: "Falta el texto a reformular." });
     }
 
-    const prompt = `Actúa como un Ingeniero Residente experto. 
-    Reformula el siguiente texto para un reporte técnico de obra. 
-    REGLAS:
-    1. Devuelve ÚNICAMENTE el texto reformulado.
-    2. No incluyas introducciones como "Aquí tienes" ni explicaciones finales.
-    3. Usa terminología técnica de construcción.
-    OTRAS REGLAS: ${reglas || "Ninguna"}
-    
-    Texto a reformular: "${text}"`;
+    const prompt = `Actúa como un profesional experto en redacción técnica y comunicación profesional.
+Reformula el siguiente texto para que tenga un lenguaje técnico, claro, preciso y profesional, adaptando la terminología y el nivel de formalidad al contexto del contenido.
+
+REGLAS:
+1. Devuelve ÚNICAMENTE el texto reformulado.
+2. No incluyas introducciones como "Aquí tienes" ni explicaciones finales.
+3. Utiliza terminología técnica y profesional adecuada al contexto del texto, evitando términos innecesariamente complejos o poco naturales.
+OTRAS REGLAS: ${reglas || "Ninguna"}
+
+Texto a reformular: "${text}"`;
 
     const response = await ai.models.generateContent({
       model: MODEL_NAME,
