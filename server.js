@@ -100,8 +100,21 @@ const {
   searchMaterials,
   updateMaterial,
 } = require("./conmon/api/materials-search");
+const {
+  calculateMatchExpress,
+  getCompatibleLotesExpress,
+  getCompatibleDesignsExpress,
+} = require("./conmon/api/intelligence-match");
 app.get("/api/search-materials", searchMaterials);
 app.post("/api/update-material", updateMaterial);
+
+// Endpoints de Intelligence Match (compatibilidad entre lotes y proyectos modulares)
+app.get("/api/calculate-match", calculateMatchExpress);
+app.post("/api/calculate-match", calculateMatchExpress);
+app.get("/api/get-compatible-lotes", getCompatibleLotesExpress);
+app.post("/api/get-compatible-lotes", getCompatibleLotesExpress);
+app.get("/api/get-compatible-designs", getCompatibleDesignsExpress);
+app.post("/api/get-compatible-designs", getCompatibleDesignsExpress);
 
 app.get("/", (req, res) => res.send("Servidor funcionando 🚀"));
 // app.get("/favicon.ico", (req, res) => res.sendStatus(204));
