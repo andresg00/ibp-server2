@@ -64,21 +64,9 @@ const execute = async (req, res) => {
     const { orden } = req.body;
     if (!orden) return res.status(400).json({ error: "Falta la orden" });
 
-    const prompt = `Instrucción del sistema: Eres un asistente técnico de ingeniería. 
-    Responde a la solicitud del usuario de forma profesional y completa.
-    
-    REGLAS DE FORMATO:
-    - NO uses negritas (asteriscos como **texto**).
-    - NO uses Markdown.
-    - NO uses listas con símbolos extraños.
-    - Escribe en párrafos limpios o listas numeradas simples (1., 2., 3.).
-    - La respuesta debe ser texto plano fluido.
-
-    Solicitud del usuario: "${orden}"`;
-
     const response = await ai.models.generateContent({
       model: MODEL_NAME,
-      contents: prompt,
+      contents: orden,
     });
 
     let cleanText = response.text
