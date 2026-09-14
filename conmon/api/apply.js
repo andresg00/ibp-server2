@@ -1,5 +1,4 @@
 const { db } = require("../config/firebase");
-const { pushNotification } = require("./notifications");
 
 function handleCORS(req, res) {
   const origin = req.headers.origin;
@@ -74,7 +73,7 @@ const applyJob = async (req, res) => {
       body: `${userData.nombre || 'Un usuario'} se ha postulado como ${especialidad} en ${ciudad}.`
     };
 
-    // Guardar notificación en Firestore en la colección notifications-V2 para registro histórico
+    // Guardar notificación en Firestore en la colección notifications-V2 para registro histórico (dispara la Cloud Function)
     const notifRef = db.collection("notifications-V2").doc();
     await notifRef.set({
       ...notificationData,
@@ -82,9 +81,6 @@ const applyJob = async (req, res) => {
       type: "job_application",
       userUid: uid
     });
-
-    // Disparar push notification FCM
-    await pushNotification(notificationData);
 
     return res.status(200).json({
       status: "success",

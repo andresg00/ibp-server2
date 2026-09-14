@@ -1,5 +1,4 @@
 const { db } = require("../config/firebase");
-const { pushNotification } = require("./notifications");
 const { verifyProjectOwnership } = require("./project-members");
 
 async function validateAccess(path, uid) {
@@ -301,12 +300,7 @@ async function setDocument(path, data, uid) {
     finalPath = `${cleanPath}/${autoId}`;
   }
 
-  // 3. Tu lógica específica para notificaciones (usando el path limpio o validando el inicio)
-  if (finalPath.startsWith("notifications-V2")) {
-    await pushNotification(data);
-  }
-
-  // 4. Escribir en Firestore con la ruta definitiva (que ahora seguro es de un documento)
+  // 3. Escribir en Firestore con la ruta definitiva (que ahora seguro es de un documento)
   const docRef = db.doc(finalPath);
   await docRef.set(data, { merge: true });
 
