@@ -50,12 +50,11 @@ const generateUploadUrl = async (req, res) => {
       //   .status(200)
       //   .json({ message: "El archivo ya existe en storage.", data });
     }
-    // 2. Configuramos la URL firmada
+    // 2. Configuramos la URL firmada sin restringir contentType para admitir cualquier formato
     const options = {
       version: "v4",
       action: "write", // 'write' significa que la URL es para SUBIR un archivo
       expires: Date.now() + 10 * 60 * 1000, // El link será válido por 10 minutos
-      contentType: contentType, // El tipo de archivo debe coincidir
     };
     if (Object.keys(extensionHeaders).length > 0) {
       options.extensionHeaders = extensionHeaders;
